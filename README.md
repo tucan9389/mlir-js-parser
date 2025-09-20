@@ -1,100 +1,14 @@
 # mlir-js-parser
 
-Tiny, WebAssembly-powered MLIR parsing for JavaScript. Use the prebuilt WASM to parse MLIR text in Node or the browser. If you need more dialects, you can add them and rebuild.
+WebAssembly MLIR parser for JavaScript (Node & browsers). Parse MLIR text into structured JSON and build custom bundles by enabling only the dialects you need.
 
-• Primary goal: parse MLIR from JS and get structured JSON.
-• Secondary goal: let developers add desired dialects and build their own bundle.
+## Use in your project (JS first)
 
-## What you can do (right now)
-
-- Use the prebuilt WASM artifacts in `wasm/` directly from Node or a browser.
-- Call a tiny API: `parseMlirJson(mlirText)` → `{ ok, json? , error? }`.
-- See working samples in `wasm/sample/`.
-
-Artifact sizes (current build):
-
-- `wasm/mlir_parser.js`: ~62 KB (raw), ~18 KB (gzip)
-- `wasm/mlir_parser.wasm`: ~1.1 MB (raw), ~398 KB (gzip)
-- `wasm/bindings.js`: ~3.0 KB (raw), ~0.8 KB (gzip)
-
-Tip: To recompute sizes (raw, gzip, brotli), run:
-
-```bash
-npm run size:report
-```
-
-Sizes will grow when you add dialects or enable more features. Use the table below to track.
-
-## Quick start
-
-Prerequisite: a recent Node.js (v18+) for the Node sample. For the browser sample, any static file server will do.
-
-1. Clone and run the Node sample
-
-```bash
-git clone <this-repo-url>
-cd mlir-js-parser
-node wasm/sample/node.mjs
-```
-
-You should see an object with `ok: true` and a `json` field describing the IR structure.
-
-1. Try the browser sample
-
-Serve `wasm/sample/` with any static file server (e.g., your favorite dev server). Then open `index.html` and click Parse.
-
-Tip: If you need an example, `npx http-server wasm/sample` is a quick option, but any static server works.
-
-## Example
-
-A single, builtin-safe example that works with the minimal bundle and shows structured JSON output.
-
-Input:
-
-```mlir
-module attributes { test.meta = { a = 1 : i32, msg = "hi" } } {}
-```
-
-Output (JSON):
-
-```json
-{
-  "ok": true,
-  "json": {
-    "attributes": {
-      "test.meta": {
-        "a": "1",
-        "msg": "hi"
-      }
-    },
-    "name": "builtin.module",
-    "operands": [],
-    "regions": [
-      {
-        "blocks": [
-          {
-            "arguments": [],
-            "operations": []
-          }
-        ]
-      }
-    ],
-    "results": []
-  }
-}
-```
-
-Note: The attribute name uses a dialect-style prefix (`test.meta`), which the builtin module accepts in this minimal build. Non-prefixed attribute names may be rejected by the builtin verifier.
-
-## How to use in your project
-
-Copy these files into your project (or reference them directly):
+Copy or reference these files:
 
 - `wasm/mlir_parser.js`
 - `wasm/mlir_parser.wasm`
 - `wasm/bindings.js`
-
-Then:
 
 Node (ESM):
 
@@ -104,7 +18,7 @@ import ModuleFactory from './mlir_parser.js';
 
 const { parseMlirJson } = await createParserModule(ModuleFactory);
 const res = parseMlirJson('module {}');
-console.log(res);
+console.log(res); // { ok: true, json: {...} } or { ok: false, error: '...' }
 ```
 
 Browser:
@@ -117,66 +31,161 @@ Browser:
   const { parseMlirJson } = await createParserModule(ModuleFactory);
   const res = parseMlirJson('module {}');
   console.log(res);
-}</script>
+</script>
 ```
+
+See `wasm/sample/` for ready-to-run examples.
+
+### Example
+
+Input MLIR:
+
+```mlir
+module attributes { test.meta = { a = 1 : i32, msg = "hi" } } {}
+```
+
+Output (summary):
+
+```json
+{
+  "ok": true,
+  "json": {
+    "name": "builtin.module",
+    "attributes": { "test.meta": { "a": "1", "msg": "hi" } },
+    "operands": [],
+    "regions": [ { "blocks": [ { "arguments": [], "operations": [] } ] } ],
+    "results": []
+  }
+}
+```
+
+Note: The minimal bundle registers only Builtin. Ops from other dialects will fail until those dialects are enabled and linked.
+
+## Dialect support
+
+The minimal bundle registers only the Builtin dialect. Additional dialects can be enabled by registering them in C++ and linking their MLIR libraries.
+
+| Dialect | Status | How to enable (summary) |
+| --- | --- | --- |
+| Builtin | Supported (default) | No action required |
+| func | Planned | Register `mlir::func::FuncDialect`; link `MLIRFuncDialect` |
+| arith | Planned | Register `mlir::arith::ArithDialect`; link `MLIRArithDialect` |
+| scf | Planned | Register `mlir::scf::SCFDialect`; link `MLIRSCFDialect` |
+| tensor | Planned | Register `mlir::tensor::TensorDialect`; link `MLIRTensorDialect` |
+
+See `docs/ADD-DIALECTS.md` for step-by-step instructions.
+
+## Status
+
+- Default: Minimal bundle with only the Builtin dialect registered
+- Ready today: Use the prebuilt artifacts in `wasm/` directly in Node or browsers
+- Extensible: Add common dialects like `func`, `arith`, `scf`, `tensor` as needed by following the docs
+
+For build/extension guides:
+
+- Build guide: `docs/BUILD.md`
+- Add dialects: `docs/ADD-DIALECTS.md`
+
+Approximate bundle sizes (vary by toolchain and flags):
+
+- `wasm/mlir_parser.js`: ~62 KB (raw) / ~18 KB (gzip)
+- `wasm/mlir_parser.wasm`: ~1.1 MB (raw) / ~398 KB (gzip)
+- `wasm/bindings.js`: ~3 KB (raw) / ~0.8 KB (gzip)
+
+Generate a fresh size report (raw/gzip/brotli) and update `docs/SIZES.md`:
+
+```bash
+npm run size:report
+```
+
+Enabling more dialects increases size. Track variants in `docs/SIZES.md`.
+
+## Quick start
+
+Prereqs: Node v18+ (ESM). For the browser sample, serve files over HTTP(s).
+
+1. Clone and run the Node sample
+
+```bash
+git clone <this-repo-url>
+cd mlir-js-parser
+npm run sample:node
+```
+
+You should see `{ ok: true, ... }` with parsed output.
+
+1. Open the browser sample
+
+Serve `wasm/sample/` and open `index.html`:
+
+```bash
+npm run serve
+```
+
+Click Parse to see results.
 
 ## API
 
-- `createParserModule(ModuleFactory): Promise<{ Module, parseMlirJson, parseMlir? }>`
-  - `ModuleFactory`: the Emscripten-generated module factory exported by `mlir_parser.js`.
-  - Returns an object with:
-    - `Module`: the Emscripten module (advanced use).
-    - `parseMlirJson(text: string)`: synchronously parses MLIR text and returns structured JSON. This is the primary API.
-      - On success: `{ ok: true, json: object }`.
-      - On failure: `{ ok: false, error: string }`.
-    - `parseMlir(text: string)` (optional, debug-only): returns canonical MLIR text as a string. Prefer `parseMlirJson` for all programmatic use; this may be removed in a future version.
+- `createParserModule(ModuleFactory): Promise<{ Module, parseMlirJson, parseMlir }>`
+  - `ModuleFactory`: The Emscripten module factory from `mlir_parser.js`.
+  - Returns:
+    - `Module`: The Emscripten module (advanced use)
+    - `parseMlirJson(text: string)`: Synchronous parse → `{ ok: true, json } | { ok: false, error }`
+    - `parseMlir(text: string)`: Returns canonical MLIR text (useful for debugging)
 
-## Add dialects or build your own
+## Add dialects
 
-If you need additional dialects, you can register them on the C++ side and rebuild the WASM bundle. To keep this README environment-agnostic, the full instructions live in separate docs:
+1. Register dialects in C++
 
-- Building from source: see `docs/BUILD.md`
-- Adding dialects: see `docs/ADD-DIALECTS.md`
+- File: `cpp/src/parser.cc`, extend `registerDialects(MLIRContext&)`:
 
-## Project structure (short)
+```cpp
+// Example: add FuncDialect
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 
-- `cpp/` — tiny C++ core and C API
-- `wasm/` — generated loader/wasm + JS bindings and samples
-- `scripts/` — helper scripts (optional, for local builds)
+void registerDialects(mlir::MLIRContext &ctx) {
+  ctx.getOrLoadDialect<mlir::BuiltinDialect>();
+  ctx.getOrLoadDialect<mlir::func::FuncDialect>();
+}
+```
 
-## Troubleshooting (common)
+1. Link MLIR dialect libraries in CMake
 
-- If Node reports ESM import issues, ensure Node v18+ and that your script runs as an ES module.
-- In browsers, load via a web server (not `file://`) so the `.wasm` can be fetched.
-- Builtin-only by default: This bundle currently registers only the builtin dialect. Ops from other dialects (e.g., `func`, `arith`) will fail to parse until those dialects are registered and linked. See `docs/ADD-DIALECTS.md`.
+- File: `cpp/CMakeLists.txt`
+- Add dialect libraries to `mlir_libs` (e.g., `MLIRFuncDialect`):
+
+```cmake
+set(mlir_libs
+  MLIRIR
+  MLIRParser
+  MLIRSupport
+  # Add: required dialect libraries
+  MLIRFuncDialect
+)
+```
+
+1. Build the WASM bundle
+
+```bash
+# Ensure Emscripten env is active (e.g., emsdk_env.sh)
+LLVM_DIR=...</path/to/wasm/llvm> MLIR_DIR=...</path/to/wasm/llvm> \
+  npm run build:wasm
+```
+
+Artifacts will be written to `wasm/mlir_parser.{js,wasm}`. See `docs/ADD-DIALECTS.md` for details and common dialect sets.
+
+## Docs & sizes
+
+- Build guide: `docs/BUILD.md`
+- Add dialects: `docs/ADD-DIALECTS.md`
+- Bundle size tracking: `docs/SIZES.md` (run `npm run size:report` to update tables)
+
+## Troubleshooting
+
+- Node ESM issues: use Node v18+ and ensure your script runs as an ES module.
+- In browsers, serve over HTTP(s) (not `file://`) so the `.wasm` can be fetched.
+- Minimal bundle registers Builtin only. If `func`/`arith` ops fail, add those dialects and rebuild.
 
 ## License
 
-TBD.
-
----
-
-## Netron integration checklist
-
-If you plan to use this parser inside Netron (or similar viewers), consider:
-
-- Loading strategy: bundle `mlir_parser.wasm` and `mlir_parser.js` via Netron’s asset pipeline; confirm ESM support or use a wrapper.
-- Transfer size: check gz/brotli; prefer brotli over gzip when hosting (most CDNs support it).
-- Worker isolation: instantiate the parser inside a Web Worker to avoid blocking the UI thread.
-- Timeouts & cancellation: validate large-model inputs; budget parse times and add cancellation hooks.
-- Error surfaces: return `{ ok: false, error }` consistently; handle unknown dialects gracefully.
-- Dialect coverage: decide which dialects to ship; build multiple variants if needed (see table below).
-- Caching: cache `.wasm` with long max-age + immutable; version via file hashes.
-
-## Dialect variants and sizes
-
-Track how bundle size changes as you enable dialects. Use `npm run size:report` after each build and paste a row here.
-
-| Variant | WASM raw | WASM gzip | WASM brotli | JS gzip (loader+bindings) | Total gzip | Total brotli |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| builtin only | ~1.1 MB | ~398 KB | ~289 KB | ~18.6 KB | ~416.6 KB | ~306 KB |
-
-Notes:
-
-- “JS gzip” is `mlir_parser.js` + `bindings.js` compressed.
-- “Total” includes `.wasm` gzip + JS gzip; brotli totals likewise.
+TBD
