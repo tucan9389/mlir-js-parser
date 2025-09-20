@@ -1,4 +1,4 @@
-# mlir-js-parser (minimal)
+# mlir-js-parser
 
 Tiny, WebAssembly-powered MLIR parsing for JavaScript. Use the prebuilt WASM to parse MLIR text in Node or the browser. If you need more dialects, you can add them and rebuild.
 
@@ -14,7 +14,7 @@ Tiny, WebAssembly-powered MLIR parsing for JavaScript. Use the prebuilt WASM to 
 Artifact sizes (current build):
 
 - `wasm/mlir_parser.js`: ~62 KB (raw), ~18 KB (gzip)
-- `wasm/mlir_parser.wasm`: ~1.1 MB (raw), ~378–390 KB (gzip)
+- `wasm/mlir_parser.wasm`: ~1.1 MB (raw), ~398 KB (gzip)
 
 Sizes vary when you add dialects or change build flags.
 
