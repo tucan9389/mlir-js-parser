@@ -1,0 +1,17 @@
+{
+  "name": "mlir-js-parser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "find-llvm": "bash scripts/find-llvm.sh",
+    "bootstrap:wasm-llvm": "bash scripts/bootstrap-llvm-wasm.sh",
+    "build:native": "bash scripts/build-native.sh",
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "sample:node": "node wasm/sample/node.mjs",
+    "serve": "npx http-server wasm/sample"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

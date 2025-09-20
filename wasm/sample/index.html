@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mlir-js-parser sample</title>
+  </head>
+  <body>
+    <h1>mlir-js-parser WASM sample</h1>
+    <textarea id="input" rows="6" cols="60">module {}</textarea>
+    <button id="run">Parse</button>
+    <pre id="out"></pre>
+
+    <script type="module">
+      import { createParserModule } from '../bindings.js';
+      import ModuleFactory from '../mlir_parser.js';
+
+      const { parseMlir } = await createParserModule(ModuleFactory);
+
+      const input = document.getElementById('input');
+      const out = document.getElementById('out');
+      document.getElementById('run').addEventListener('click', () => {
+        const res = parseMlir(input.value);
+        out.textContent = res.ok ? res.module : `Error: ${res.error}`;
+      });
+    </script>
+  </body>
+</html>

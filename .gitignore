@@ -1,0 +1,16 @@
+# Build artifacts
+/build/
+/CMakeCache.txt
+/CMakeFiles/
+/*.ninja
+/*.o
+/*.obj
+/*.a
+/*.lib
+/*.wasm
+/*.js
+/wasm/mlir_parser.*
+/node_modules/
+
+# macOS
+.DS_Store
