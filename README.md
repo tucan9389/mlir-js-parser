@@ -15,8 +15,15 @@ Artifact sizes (current build):
 
 - `wasm/mlir_parser.js`: ~62 KB (raw), ~18 KB (gzip)
 - `wasm/mlir_parser.wasm`: ~1.1 MB (raw), ~398 KB (gzip)
+- `wasm/bindings.js`: ~3.0 KB (raw), ~0.8 KB (gzip)
 
-Sizes vary when you add dialects or change build flags.
+Tip: To recompute sizes (raw, gzip, brotli), run:
+
+```bash
+npm run size:report
+```
+
+Sizes will grow when you add dialects or enable more features. Use the table below to track.
 
 ## Quick start
 
@@ -32,7 +39,7 @@ node wasm/sample/node.mjs
 
 You should see an object with `ok: true` and a `json` field describing the IR structure.
 
-2. Try the browser sample
+1. Try the browser sample
 
 Serve `wasm/sample/` with any static file server (e.g., your favorite dev server). Then open `index.html` and click Parse.
 
@@ -146,3 +153,30 @@ If you need additional dialects, you can register them on the C++ side and rebui
 ## License
 
 TBD.
+
+---
+
+## Netron integration checklist
+
+If you plan to use this parser inside Netron (or similar viewers), consider:
+
+- Loading strategy: bundle `mlir_parser.wasm` and `mlir_parser.js` via Netron’s asset pipeline; confirm ESM support or use a wrapper.
+- Transfer size: check gz/brotli; prefer brotli over gzip when hosting (most CDNs support it).
+- Worker isolation: instantiate the parser inside a Web Worker to avoid blocking the UI thread.
+- Timeouts & cancellation: validate large-model inputs; budget parse times and add cancellation hooks.
+- Error surfaces: return `{ ok: false, error }` consistently; handle unknown dialects gracefully.
+- Dialect coverage: decide which dialects to ship; build multiple variants if needed (see table below).
+- Caching: cache `.wasm` with long max-age + immutable; version via file hashes.
+
+## Dialect variants and sizes
+
+Track how bundle size changes as you enable dialects. Use `npm run size:report` after each build and paste a row here.
+
+| Variant | WASM raw | WASM gzip | WASM brotli | JS gzip (loader+bindings) | Total gzip | Total brotli |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| builtin only | ~1.1 MB | ~398 KB | ~289 KB | ~18.6 KB | ~416.6 KB | ~306 KB |
+
+Notes:
+
+- “JS gzip” is `mlir_parser.js` + `bindings.js` compressed.
+- “Total” includes `.wasm` gzip + JS gzip; brotli totals likewise.

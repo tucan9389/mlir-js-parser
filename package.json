@@ -9,7 +9,8 @@
     "build:native": "bash scripts/build-native.sh",
     "build:wasm": "bash scripts/build-wasm.sh",
     "sample:node": "node wasm/sample/node.mjs",
-    "serve": "npx http-server wasm/sample"
+    "serve": "npx http-server wasm/sample",
+    "size:report": "node scripts/size-report.mjs"
   },
   "devDependencies": {
     "http-server": "^14.1.1"
