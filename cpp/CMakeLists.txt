@@ -74,7 +74,7 @@ if(EMSCRIPTEN)
     "-sEXPORT_ES6=1"
     "-sENVIRONMENT=web,worker,node"
     "-sALLOW_MEMORY_GROWTH=1"
-    "-sEXPORTED_FUNCTIONS=['_mlir_parse_to_string','_malloc','_free']"
+    "-sEXPORTED_FUNCTIONS=['_mlir_parse_to_string','_mlir_parse_to_json','_malloc','_free']"
     "-sEXPORTED_RUNTIME_METHODS=['cwrap','ccall','UTF8ToString']"
     "-sERROR_ON_UNDEFINED_SYMBOLS=0"
   )
