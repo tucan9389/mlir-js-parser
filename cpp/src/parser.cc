@@ -19,10 +19,26 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Pass/PassManager.h"
 
-// Dialects: func, arith, scf
+// Dialects: func, arith, scf (+ core infra)
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#ifdef HAVE_MLIR_CF_DIALECT
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
+#endif
+#ifdef HAVE_MLIR_MEMREF_DIALECT
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#endif
+#ifdef HAVE_MLIR_TENSOR_DIALECT
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#endif
+#ifdef HAVE_MLIR_MATH_DIALECT
+#include "mlir/Dialect/Math/IR/Math.h"
+#endif
+// Optional/common attrs
+#ifdef HAVE_MLIR_DLTI_DIALECT
+#include "mlir/Dialect/DLTI/IR/DLTI.h"
+#endif
 
 // LLVM support headers used by the parser
 #include "llvm/Support/SourceMgr.h"
@@ -42,6 +58,23 @@ void registerDialects(MLIRContext &ctx) {
   ctx.getOrLoadDialect<mlir::func::FuncDialect>();
   ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
+  // Core infrastructure dialects frequently encountered in real IR
+  #ifdef HAVE_MLIR_CF_DIALECT
+  ctx.getOrLoadDialect<mlir::cf::ControlFlowDialect>();
+  #endif
+  #ifdef HAVE_MLIR_MEMREF_DIALECT
+  ctx.getOrLoadDialect<mlir::memref::MemRefDialect>();
+  #endif
+  #ifdef HAVE_MLIR_TENSOR_DIALECT
+  ctx.getOrLoadDialect<mlir::tensor::TensorDialect>();
+  #endif
+  #ifdef HAVE_MLIR_MATH_DIALECT
+  ctx.getOrLoadDialect<mlir::math::MathDialect>();
+  #endif
+  // Data layout common attribute dialect (safe to register; no heavy deps)
+  #ifdef HAVE_MLIR_DLTI_DIALECT
+  ctx.getOrLoadDialect<mlir::dlti::DLTIDialect>();
+  #endif
 }
 
 // Serialize a Type to a string (best-effort).
@@ -180,7 +213,8 @@ static llvm::json::Object opToJson(Operation *op) {
 }
 } // namespace
 
-extern "C" int mlir_parse_to_string(const char *mlir_text,
+static int mlir_parse_to_string_impl(const char *mlir_text,
+                                     bool allowUnregistered,
                                      char *out_buffer,
                                      int out_capacity,
                                      char *err_buffer,
@@ -196,6 +230,7 @@ extern "C" int mlir_parse_to_string(const char *mlir_text,
 
   MLIRContext ctx;
   registerDialects(ctx);
+  if (allowUnregistered) ctx.allowUnregisteredDialects();
 
   // Prepare to capture diagnostics with file:line:col.
   std::string diagStr;
@@ -251,7 +286,28 @@ extern "C" int mlir_parse_to_string(const char *mlir_text,
   return 0;
 }
 
-extern "C" int mlir_parse_to_json(const char *mlir_text,
+extern "C" int mlir_parse_to_string(const char *mlir_text,
+                                     char *out_buffer,
+                                     int out_capacity,
+                                     char *err_buffer,
+                                     int err_capacity) {
+  return mlir_parse_to_string_impl(mlir_text, /*allowUnregistered=*/false,
+                                   out_buffer, out_capacity, err_buffer, err_capacity);
+}
+
+// Extended entrypoint with options (for wasm scanning etc.)
+extern "C" int mlir_parse_to_string_opts(const char *mlir_text,
+                                          int allow_unregistered,
+                                          char *out_buffer,
+                                          int out_capacity,
+                                          char *err_buffer,
+                                          int err_capacity) {
+  return mlir_parse_to_string_impl(mlir_text, allow_unregistered != 0,
+                                   out_buffer, out_capacity, err_buffer, err_capacity);
+}
+
+static int mlir_parse_to_json_impl(const char *mlir_text,
+                                   bool allowUnregistered,
                                    char *out_buffer,
                                    int out_capacity,
                                    char *err_buffer,
@@ -267,6 +323,7 @@ extern "C" int mlir_parse_to_json(const char *mlir_text,
 
   MLIRContext ctx;
   registerDialects(ctx);
+  if (allowUnregistered) ctx.allowUnregisteredDialects();
 
   // Prepare to capture diagnostics with file:line:col.
   std::string diagStr;
@@ -316,5 +373,73 @@ extern "C" int mlir_parse_to_json(const char *mlir_text,
     return -needed;
   }
   std::memcpy(out_buffer, jsonStr.c_str(), needed);
+  return 0;
+}
+
+extern "C" int mlir_parse_to_json(const char *mlir_text,
+                                   char *out_buffer,
+                                   int out_capacity,
+                                   char *err_buffer,
+                                   int err_capacity) {
+  return mlir_parse_to_json_impl(mlir_text, /*allowUnregistered=*/false,
+                                 out_buffer, out_capacity, err_buffer, err_capacity);
+}
+
+extern "C" int mlir_parse_to_json_opts(const char *mlir_text,
+                                        int allow_unregistered,
+                                        char *out_buffer,
+                                        int out_capacity,
+                                        char *err_buffer,
+                                        int err_capacity) {
+  return mlir_parse_to_json_impl(mlir_text, allow_unregistered != 0,
+                                 out_buffer, out_capacity, err_buffer, err_capacity);
+}
+
+extern "C" int mlir_parse_check(const char *mlir_text,
+                                 int allow_unregistered,
+                                 char *err_buffer,
+                                 int err_capacity) {
+  if (!mlir_text) {
+    const char *msg = "input text is null";
+    if (err_buffer && err_capacity > 0) {
+      std::strncpy(err_buffer, msg, err_capacity - 1);
+      err_buffer[err_capacity - 1] = '\0';
+    }
+    return 1;
+  }
+
+  MLIRContext ctx;
+  registerDialects(ctx);
+  if (allow_unregistered) ctx.allowUnregisteredDialects();
+
+  std::string diagStr;
+  llvm::raw_string_ostream diagOS(diagStr);
+  auto handlerId = ctx.getDiagEngine().registerHandler([&](Diagnostic &diag) {
+    mlir::Location loc = diag.getLocation();
+    if (mlir::isa<mlir::FileLineColLoc>(loc)) {
+      auto fileLoc = mlir::cast<mlir::FileLineColLoc>(loc);
+      diagOS << fileLoc.getFilename().str() << ":" << fileLoc.getLine() << ":" << fileLoc.getColumn() << ": ";
+    }
+    diag.print(diagOS);
+    diagOS << '\n';
+  });
+
+  llvm::SourceMgr sourceMgr;
+  auto memBuffer = llvm::MemoryBuffer::getMemBuffer(mlir_text, "<input>", false);
+  sourceMgr.AddNewSourceBuffer(std::move(memBuffer), llvm::SMLoc());
+
+  OwningOpRef<ModuleOp> module = parseSourceFile<ModuleOp>(sourceMgr, &ctx);
+  if (!module) {
+    diagOS.flush();
+    ctx.getDiagEngine().eraseHandler(handlerId);
+    const std::string &msg = diagStr.empty() ? std::string("failed to parse MLIR") : diagStr;
+    int needed = static_cast<int>(msg.size()) + 1;
+    if (err_capacity < needed)
+      return -needed;
+    if (err_buffer && err_capacity > 0)
+      std::memcpy(err_buffer, msg.c_str(), needed);
+    return 2;
+  }
+  ctx.getDiagEngine().eraseHandler(handlerId);
   return 0;
 }

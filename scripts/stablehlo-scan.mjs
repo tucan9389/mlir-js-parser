@@ -19,7 +19,7 @@ function parseArgs(argv) {
   let defaultDir = candidates.find(d => fs.existsSync(d)) || candidates[0];
   if (!defaultDir) defaultDir = path.resolve(cwd, '../stablehlo');
 
-  const args = { dir: defaultDir, outDir: path.resolve(cwd, 'tmp'), listOnly: false };
+  const args = { dir: defaultDir, outDir: path.resolve(cwd, 'tmp'), listOnly: false, allowUnregistered: false };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dir') {
@@ -28,8 +28,10 @@ function parseArgs(argv) {
       args.outDir = path.resolve(argv[++i]);
     } else if (a === '--list-only') {
       args.listOnly = true;
+    } else if (a === '--allow-unregistered') {
+      args.allowUnregistered = true;
     } else if (a === '--help' || a === '-h') {
-      console.log('Usage: node scripts/stablehlo-scan.mjs [--dir <path>] [--out <path>] [--list-only]');
+      console.log('Usage: node scripts/stablehlo-scan.mjs [--dir <path>] [--out <path>] [--list-only] [--allow-unregistered]');
       process.exit(0);
     }
   }
@@ -61,13 +63,26 @@ function normalizeError(msg) {
 }
 
 function extractUnknownDialect(msg) {
-  // Try to extract dialect prefix from messages like: "'stablehlo.add' op is unknown"
-  const m = msg.match(/'([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)'\s+op\s+/);
-  return m ? m[1] : null;
+  // Known shapes:
+  // 1) "'stablehlo.add' op is unknown" => capture stablehlo
+  // 2) "dialect `gpu' not found for custom op 'gpu.module'" => capture gpu
+  // 3) "...'none' attribute created with unregistered dialect... #\"dlti\"<...>" => capture dlti (best-effort)
+
+  let m = msg.match(/'([a-zA-Z0-9_]+)\.[a-zA-Z0-9_]+'\s+op\s+/);
+  if (m) return m[1];
+
+  m = msg.match(/dialect [`'"]([a-zA-Z0-9_]+)[`'"]\s+not\s+found/i);
+  if (m) return m[1];
+
+  // Best-effort: look for #"name"< or !"name"< prefixes in printed attrs/types
+  m = msg.match(/[#!]["']([a-zA-Z0-9_]+)["']</);
+  if (m) return m[1];
+
+  return null;
 }
 
 async function main() {
-  const { dir, outDir, listOnly } = parseArgs(process.argv);
+  const { dir, outDir, listOnly, allowUnregistered } = parseArgs(process.argv);
   ensureDirSync(outDir);
 
   // Collect all .mlir files
@@ -99,7 +114,7 @@ async function main() {
 
   const { createParserModule } = await import(pathToFileURLCompat(bindingsPath));
   const ModuleFactory = (await import(pathToFileURLCompat(wasmPath))).default;
-  const { parseMlirJson } = await createParserModule(ModuleFactory);
+  const { parseMlirCheck } = await createParserModule(ModuleFactory);
 
   const results = [];
   const errorCounts = new Map();
@@ -115,7 +130,7 @@ async function main() {
     }
     try {
       const text = await fsp.readFile(file, 'utf8');
-      const res = parseMlirJson(text);
+      const res = parseMlirCheck(text, { allowUnregistered });
       if (res.ok) {
         okCount++;
         results.push({ file, ok: true });

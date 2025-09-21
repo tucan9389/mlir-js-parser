@@ -4,9 +4,11 @@ Top-level doc to run large-scale parsing against a StableHLO MLIR corpus, track 
 
 ## Coverage status
 
-| Date | Total | OK | Failed | Success Rate | Notes |
-| --- | ---: | ---: | ---: | ---: | --- |
-| 2025-09-20 | 5,449 | 19 | 5,430 | 0.35% | Dialects: builtin, func, arith, scf; allowUnregisteredDialects: false |
+| Date | Total | OK | Failed | Success Rate | Size | Notes |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 2025-09-20 | 5,449 | 515 | 4,934 | 9.46% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor |
+| 2025-09-20 | 5,449 | 58 | 5,391 | 1.06% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true (scan mode); Dialects: builtin, func, arith, scf, cf, memref, tensor |
+| 2025-09-20 | 5,449 | 19 | 5,430 | 0.35% | — | Dialects: builtin, func, arith, scf; allowUnregisteredDialects: false |
 
 Update this table after each scan to see progress as dialect coverage improves.
 
@@ -27,7 +29,11 @@ Outputs:
 1) Run full scan and collect stats
 
 ```bash
+# Default (strict):
 node scripts/stablehlo-scan.mjs --dir ../stablehlo
+
+# Broad triage (allow unknown/unregistered dialects to parse):
+node scripts/stablehlo-scan.mjs --dir ../stablehlo --allow-unregistered
 ```
 
 Outputs:
@@ -91,6 +97,7 @@ Recommended next dialects to consider (incrementally):
 For broad corpus triage, allowing unregistered dialects can increase parse progress and improve error fidelity:
 
 - In code: call `ctx.allowUnregisteredDialects();` on the `MLIRContext`
+- The scan script also supports `--allow-unregistered` which enables this mode in the wasm parser (no rebuild needed)
 - You can gate this via an env var or build flag if you prefer not to change default behavior for production
 
 ## Artifacts at a glance

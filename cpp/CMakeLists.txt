@@ -40,15 +40,37 @@ add_definitions(${LLVM_DEFINITIONS})
 # Link minimal MLIR components; expand as needed.
 llvm_map_components_to_libnames(llvm_libs Support)
 
+# Base required libs
 set(mlir_libs
   MLIRIR
   MLIRParser
   MLIRSupport
-  # Common dialect libraries
-  MLIRFuncDialect
-  MLIRArithDialect
-  MLIRSCFDialect
 )
+
+get_filename_component(_mlir_cmake_dir ${MLIR_DIR} DIRECTORY)       # .../lib/cmake
+get_filename_component(MLIR_LIB_DIR ${_mlir_cmake_dir} DIRECTORY)   # .../lib
+
+function(append_dialect_if_available lib macro)
+  set(_lib_path "${MLIR_LIB_DIR}/lib${lib}.a")
+  if(EXISTS ${_lib_path})
+    list(APPEND mlir_libs ${lib})
+    set(mlir_libs "${mlir_libs}" PARENT_SCOPE)
+    target_compile_definitions(mlir_parser_min PRIVATE ${macro}=1)
+    message(STATUS "Linking MLIR lib: ${_lib_path} (define ${macro})")
+  else()
+    message(STATUS "Skipping MLIR lib (not found): ${_lib_path}")
+  endif()
+endfunction()
+
+# Common dialects (link if present in user's MLIR build), also define macros for conditional registration
+append_dialect_if_available(MLIRFuncDialect           HAVE_MLIR_FUNC_DIALECT)
+append_dialect_if_available(MLIRArithDialect          HAVE_MLIR_ARITH_DIALECT)
+append_dialect_if_available(MLIRSCFDialect            HAVE_MLIR_SCF_DIALECT)
+append_dialect_if_available(MLIRControlFlowDialect    HAVE_MLIR_CF_DIALECT)
+append_dialect_if_available(MLIRMemRefDialect         HAVE_MLIR_MEMREF_DIALECT)
+append_dialect_if_available(MLIRTensorDialect         HAVE_MLIR_TENSOR_DIALECT)
+append_dialect_if_available(MLIRMathDialect           HAVE_MLIR_MATH_DIALECT)
+append_dialect_if_available(MLIRDLTIDialect           HAVE_MLIR_DLTI_DIALECT)
 
 # Link libraries
 # Note: order matters on some toolchains; MLIR first, then LLVM support
@@ -78,10 +100,21 @@ if(EMSCRIPTEN)
     "-sEXPORT_ES6=1"
     "-sENVIRONMENT=web,worker,node"
     "-sALLOW_MEMORY_GROWTH=1"
-    "-sEXPORTED_FUNCTIONS=['_mlir_parse_to_string','_mlir_parse_to_json','_malloc','_free']"
+    "-sSTACK_SIZE=5242880" # 5MB stack to tolerate deep recursion/large inputs
+  "-sEXPORTED_FUNCTIONS=['_mlir_parse_to_string','_mlir_parse_to_json','_mlir_parse_to_string_opts','_mlir_parse_to_json_opts','_mlir_parse_check','_malloc','_free']"
     "-sEXPORTED_RUNTIME_METHODS=['cwrap','ccall','UTF8ToString']"
     "-sERROR_ON_UNDEFINED_SYMBOLS=0"
   )
+
+  # Provide stronger diagnostics in Debug builds to chase OOB causes
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_link_options(mlir_parser PRIVATE
+      "-sASSERTIONS=2"
+      "-sSAFE_HEAP=1"
+      "-sSTACK_OVERFLOW_CHECK=2"
+      "-sDEMANGLE_SUPPORT=1"
+    )
+  endif()
 
   # Place generated js/wasm next to source wasm/ folder for easy consumption
   set(WASM_OUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wasm")
