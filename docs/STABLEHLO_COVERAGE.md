@@ -11,6 +11,7 @@ Top-level doc to run large-scale parsing against a StableHLO MLIR corpus, track 
 | 2025-09-20 | 5,449 | 515 | 4,934 | 9.46% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor |
 | 2025-09-20 | 5,449 | 1,473 | 3,976 | 27.03% | js: 62 KB, wasm: 15 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor, math, dlti, vector, linalg, llvm, spirv, transform, bufferization, sparse_tensor, omp, gpu, tosa, async, emitc, shape |
 | 2025-09-21 | 5,449 | 4,348 | 1,101 | 79.83% | js: 18.7 KB (gz), wasm: 4.12 MB (gz) | StableHLO/CHLO/VHLO linked; allowUnregistered: true; stack=5MB; Dialects: core MLIR + StableHLO family |
+| 2025-09-21 | 5,449 | 4,348 | 1,101 | 79.83% | js: 17.7 KB (gz), wasm: 4.02 MB (gz) | Transform extensions wired (header-registry); allowUnregistered: true; stack=5MB |
 
 Update this table after each scan to see progress as dialect coverage improves.
 

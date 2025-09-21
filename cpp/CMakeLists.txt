@@ -79,6 +79,8 @@ append_dialect_if_available(MLIRLinalgDialect         HAVE_MLIR_LINALG_DIALECT)
 append_dialect_if_available(MLIRLLVMDialect           HAVE_MLIR_LLVM_DIALECT)
 append_dialect_if_available(MLIRSPIRVDialect          HAVE_MLIR_SPIRV_DIALECT)
 append_dialect_if_available(MLIRTransformDialect      HAVE_MLIR_TRANSFORM_DIALECT)
+# Transform dialect extensions provide many ops like transform.structured.*
+append_dialect_if_available(MLIRTransformDialectExtensions HAVE_MLIR_TRANSFORM_DIALECT_EXTENSIONS)
 append_dialect_if_available(MLIRBufferizationDialect  HAVE_MLIR_BUFFERIZATION_DIALECT)
 append_dialect_if_available(MLIRSparseTensorDialect   HAVE_MLIR_SPARSE_TENSOR_DIALECT)
 append_dialect_if_available(MLIROpenMPDialect         HAVE_MLIR_OMP_DIALECT)

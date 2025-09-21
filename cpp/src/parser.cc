@@ -12,6 +12,7 @@
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Dialect.h"
+#include "mlir/IR/DialectRegistry.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Location.h"
@@ -72,6 +73,14 @@
 #endif
 #ifdef HAVE_MLIR_TRANSFORM_DIALECT
 #include "mlir/Dialect/Transform/IR/TransformDialect.h"
+#endif
+// Transform dialect extensions: register structured transform ops (if available).
+#if __has_include("mlir/Dialect/Transform/Transforms/TransformDialectExtensions.h")
+#include "mlir/Dialect/Transform/Transforms/TransformDialectExtensions.h"
+#define HAVE_TRANSFORM_EXTENSIONS_HEADER 1
+#elif __has_include("mlir/Dialect/Transform/Transforms/TransformDialectExtension.h")
+#include "mlir/Dialect/Transform/Transforms/TransformDialectExtension.h"
+#define HAVE_TRANSFORM_EXTENSIONS_HEADER 1
 #endif
 #ifdef HAVE_MLIR_BUFFERIZATION_DIALECT
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
@@ -162,6 +171,16 @@ struct VhloStubDialect : public Dialect {
 };
 // Helper to register a minimal set of dialects. Expand here over time.
 void registerDialects(MLIRContext &ctx) {
+  // If available, wire up Transform dialect extensions via a DialectRegistry.
+  // This enables ops like transform.structured.match which live in extensions.
+  #if defined(HAVE_TRANSFORM_EXTENSIONS_HEADER)
+  {
+    DialectRegistry reg;
+    mlir::transform::registerTransformDialectExtension(reg);
+    ctx.appendDialectRegistry(reg);
+  }
+  #endif
+
   ctx.getOrLoadDialect<BuiltinDialect>();
   // Common dialects
   ctx.getOrLoadDialect<mlir::func::FuncDialect>();
