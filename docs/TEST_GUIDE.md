@@ -13,12 +13,12 @@ The testing strategy should be structured around four main pillars:
 
 These tests are directly tied to the project's viability. They ensure the most basic operations of the parser and establish a foundation for efficiently adding future tests.
 
-### 1. Test Infrastructure and CI Setup (P0)
+### 1. Test Infrastructure and CI Setup (P0) ✅
 
 - **Description:** Set up a testing framework (e.g., Jest, Vitest) and establish an automated testing pipeline via GitHub Actions.
 - **Reason (P0):** Building an automated testing environment from the early stages of development is crucial for continuously maintaining code quality and preventing regressions.
 
-### 2. Unit Tests for Basic MLIR Structure Parsing (P0)
+### 2. Unit Tests for Basic MLIR Structure Parsing (P0) ✅
 
 - **Description:** Verify that the core components of MLIR—Operations, Blocks, Regions, and SSA Values—are parsed correctly.
 - **Example Scenarios:**
@@ -41,12 +41,26 @@ Implemented (initial):
 
 Note: Priority labels (P0–P3) are planning tools in this document and issue tracker. They are intentionally not reflected in code or folder names.
 
-### 3. Introduction of Snapshot Testing Framework (P0)
+### 3. Introduction of Snapshot Testing Framework (P0) ✅
 
 - **Description:** Take valid MLIR code as input, save the generated AST as a JSON snapshot, and compare future outputs against this snapshot when the code changes.
 - **Reason (P0):** The AST output by the parser is complex and large. Snapshot testing is the most efficient way to verify the parser's overall behavior and detect unintended changes.
 
 ### 4. Verification of Basic Tokenization and Identifier Handling (P0)
+
+Implemented (initial):
+
+- Added Vitest snapshot config at `vitest.snap.config.mjs`.
+- Created initial snapshot test: `tests/snapshot/core/module-attributes.test.js`.
+- NPM scripts:
+    - `npm run test:snap` (watch/local)
+    - `npm run test:snap:run` (CI/one-shot)
+- CI workflow: `.github/workflows/ci-tests-snapshots.yml` runs on Node 18/20/22.
+
+Notes:
+
+- Tests are conditionally skipped if `wasm/mlir_parser.js` is absent (e.g., on forks without artifacts) to keep CI green.
+- Snapshots will evolve as dialect support expands; update snapshots intentionally when parser output changes.
 
 - **Description:** Ensure the Lexer (or equivalent logic) correctly distinguishes MLIR's various identifiers and keywords, and properly handles comments and whitespace.
 - **Example Scenarios:**

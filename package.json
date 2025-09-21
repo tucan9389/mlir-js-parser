@@ -13,7 +13,9 @@
     "size:report": "node scripts/size-report.mjs",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:ci": "vitest run --config vitest.config.mjs --reporter=dot"
+    "test:ci": "vitest run --config vitest.config.mjs --reporter=dot",
+    "test:snap": "vitest --config vitest.snap.config.mjs",
+    "test:snap:run": "vitest run --config vitest.snap.config.mjs --reporter=dot"
   },
   "devDependencies": {
     "http-server": "^14.1.1",

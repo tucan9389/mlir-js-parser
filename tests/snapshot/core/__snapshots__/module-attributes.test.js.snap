@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Snapshot: module with attributes > matches snapshot for attributes dictionary 1`] = `
+{
+  "attributes": {
+    "test.meta": {
+      "a": "1",
+      "msg": "hi",
+    },
+  },
+  "name": "builtin.module",
+  "operands": [],
+  "regions": [
+    {
+      "blocks": [
+        {
+          "arguments": [],
+          "operations": [],
+        },
+      ],
+    },
+  ],
+  "results": [],
+}
+`;
