@@ -28,6 +28,13 @@ describe('Basic MLIR structure', () => {
     // Minimal structural assertions—future snapshots will expand this
     expect(j).toBeTypeOf('object');
     expect(j.name).toBe('builtin.module');
+    // Location should be present on operations
+    expect(j.loc).toBeTypeOf('object');
+    if (j.loc.unknown !== true) {
+      expect(typeof j.loc.file).toBe('string');
+      expect(typeof j.loc.line).toBe('number');
+      expect(typeof j.loc.column).toBe('number');
+    }
     expect(Array.isArray(j.operands)).toBe(true);
     expect(Array.isArray(j.results)).toBe(true);
     expect(Array.isArray(j.regions)).toBe(true);

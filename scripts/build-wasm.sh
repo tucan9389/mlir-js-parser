@@ -1,15 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${LLVM_DIR:?Set LLVM_DIR (e.g., /path/to/wasm/llvm/install)}"
-: "${MLIR_DIR:?Set MLIR_DIR (usually same as LLVM_DIR)}"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+
+# Try to locate LLVM/MLIR if not provided in env
+if [[ -z "${LLVM_DIR:-}" || -z "${MLIR_DIR:-}" ]]; then
+  if exports=$(bash "$ROOT_DIR/scripts/find-llvm.sh" 2>/dev/null); then
+    eval "$exports"
+    echo "Using auto-detected LLVM_DIR=$LLVM_DIR"
+    echo "Using auto-detected MLIR_DIR=$MLIR_DIR"
+  else
+    echo "LLVM_DIR/MLIR_DIR not set and auto-detection failed."
+    echo "Set LLVM_DIR (e.g., /path/to/llvm/build) and MLIR_DIR or run scripts/bootstrap-llvm-wasm.sh" >&2
+    exit 1
+  fi
+fi
 
 if ! command -v emcc >/dev/null 2>&1; then
   echo "Emscripten compiler 'emcc' not found on PATH. Please source emsdk_env.sh or install via Homebrew." >&2
   exit 1
 fi
 
-ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 BUILD_DIR="$ROOT_DIR/build/wasm"
 
 mkdir -p "$BUILD_DIR"

@@ -95,10 +95,28 @@ static llvm::json::Object valueToJson(Value v) {
   return obj;
 }
 
+// Convert a Location to a minimal JSON object.
+// - FileLineColLoc => { file, line, column }
+// - Others => { unknown: true }
+static llvm::json::Object locToJson(Location loc) {
+  llvm::json::Object o;
+  if (auto fl = mlir::dyn_cast<FileLineColLoc>(loc)) {
+    o["file"] = fl.getFilename().str();
+    o["line"] = static_cast<int64_t>(fl.getLine());
+    o["column"] = static_cast<int64_t>(fl.getColumn());
+    return o;
+  }
+  o["unknown"] = true;
+  return o;
+}
+
 static llvm::json::Object opToJson(Operation *op) {
   llvm::json::Object obj;
   // name/opcode
   obj["name"] = op->getName().getStringRef().str();
+
+  // source location (best-effort)
+  obj["loc"] = locToJson(op->getLoc());
 
   // attributes
   llvm::json::Object attrs;
@@ -132,8 +150,11 @@ static llvm::json::Object opToJson(Operation *op) {
       llvm::json::Object bj;
       // block arguments
       llvm::json::Array args;
-      for (auto arg : block.getArguments())
-        args.push_back(valueToJson(arg));
+      for (auto arg : block.getArguments()) {
+        llvm::json::Object aj = valueToJson(arg);
+        aj["loc"] = locToJson(arg.getLoc());
+        args.push_back(std::move(aj));
+      }
       bj["arguments"] = std::move(args);
       // operations in block
       llvm::json::Array ops;

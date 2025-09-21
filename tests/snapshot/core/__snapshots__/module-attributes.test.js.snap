@@ -8,6 +8,11 @@ exports[`Snapshot: module with attributes > matches snapshot for attributes dict
       "msg": "hi",
     },
   },
+  "loc": {
+    "column": 1,
+    "file": "<input>",
+    "line": 1,
+  },
   "name": "builtin.module",
   "operands": [],
   "regions": [

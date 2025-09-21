@@ -118,8 +118,53 @@ These tests enhance the quality of the parser and lay the groundwork for impleme
 
 ### 9. Source Location Tracking Verification (P2)
 
-- **Description:** Verify that all nodes in the generated AST contain accurate location information (line, column) from the original source code.
+- **Description:** Verify that operations and block arguments in the generated AST include accurate location information (file, line, column) from the original source code.
 - **Reason (P2):** Essential for highlighting specific code in visualization tools or reporting the exact location of errors.
+
+Implemented (initial):
+
+- Every operation JSON now contains `loc`:
+    - `FileLineColLoc` → `{ "file": string, "line": number, "column": number }`
+    - Other location kinds → `{ "unknown": true }`
+- Block arguments (function/block parameters) also include `loc` entries.
+
+Notes:
+
+- The minimal bundle registers only Builtin; so `module {}` parses, but `module` regions do not accept block arguments. To test block-argument `loc`, enable a dialect with region arguments (e.g., `func`) and parse `func.func`.
+- The JSON writer orders object keys (you may see `column, file, line`). Write assertions independent of key order.
+
+Examples:
+
+1. Operation `loc` without explicit source location (defaults to `<input>:1:1`)
+
+```js
+const res = parseMlirJson('module {}');
+expect(res.ok).toBe(true);
+expect(res.json.loc).toBeTypeOf('object');
+expect(typeof res.json.loc.line).toBe('number');
+expect(typeof res.json.loc.column).toBe('number');
+```
+
+1. Operation `loc` with an explicit file/line/column via a location alias
+
+```js
+const src = '#loc1 = loc("sample.mlir":10:5)\nmodule {} loc(#loc1)';
+const res = parseMlirJson(src);
+expect(res.ok).toBe(true);
+expect(res.json.loc).toEqual({ file: 'sample.mlir', line: 10, column: 5 });
+```
+
+1. Block-argument `loc` (requires `func` dialect)
+
+```mlir
+module {
+    func.func @foo(%x: i32) {
+        return
+    }
+}
+```
+
+In JSON, expect `regions[0].blocks[0].arguments[0].loc` to be present with `{ file, line, column }`.
 
 ### 10. Generic vs. Custom Operation Syntax Testing (P2)
 

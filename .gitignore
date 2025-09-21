@@ -10,6 +10,8 @@
 /*.wasm
 /*.js
 /wasm/mlir_parser.*
+/wasm/*.map
+/compile_commands.json
 /node_modules/
 
 # Test/coverage artifacts

@@ -142,6 +142,25 @@ Click Parse to see results.
     - `parseMlir(text: string)`: Returns canonical MLIR text (useful for debugging)
   - Errors: When parsing fails, `error` includes detailed diagnostics with `file:line:column: message` where available.
 
+### JSON shape: source locations
+
+Operations and block arguments include a `loc` field to aid debugging and tooling integration:
+
+```json
+{
+  "name": "builtin.module",
+  "loc": { "file": "<input>", "line": 1, "column": 1 },
+  "regions": [
+    { "blocks": [
+      { "arguments": [ { "type": "i32", "loc": { "file": "<input>", "line": 1, "column": 10 } } ],
+        "operations": [] }
+    ]}
+  ]
+}
+```
+
+For non file/line/column locations, the parser emits `{ "unknown": true }`.
+
 ## Add dialects
 
 1. Register dialects in C++
