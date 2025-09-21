@@ -170,15 +170,7 @@ For broad corpus triage, allowing unregistered dialects can increase parse progr
 - `tmp/stablehlo-dialect-stats.json` — unknown dialects sorted by frequency
 - `tmp/stablehlo-parse-results.jsonl` — per-file results (line-delimited JSON)
 
-## CI tie-in (optional)
 
-You can add a CI job that:
-
-1) Builds wasm artifacts (as in snapshot CI)
-2) Runs the scan (with a smaller representative subset if needed)
-3) Uploads `tmp/*.json` as artifacts
-
-This helps track regressions/improvements across PRs.
 
 ## Known notes
 
