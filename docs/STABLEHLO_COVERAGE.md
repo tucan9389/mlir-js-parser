@@ -6,6 +6,7 @@ Top-level doc to run large-scale parsing against a StableHLO MLIR corpus, track 
 
 | Date | Total | OK | Failed | Success Rate | Size | Notes |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 2025-09-20 | 5,449 | 1,473 | 3,976 | 27.03% | js: 62 KB, wasm: 15 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor, math, dlti, vector, linalg, llvm, spirv, transform, bufferization, sparse_tensor, omp, gpu, tosa, async, emitc, shape |
 | 2025-09-20 | 5,449 | 515 | 4,934 | 9.46% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor |
 | 2025-09-20 | 5,449 | 58 | 5,391 | 1.06% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true (scan mode); Dialects: builtin, func, arith, scf, cf, memref, tensor |
 | 2025-09-20 | 5,449 | 19 | 5,430 | 0.35% | — | Dialects: builtin, func, arith, scf; allowUnregisteredDialects: false |

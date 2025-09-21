@@ -30,10 +30,15 @@ emcmake cmake -S "$SRC_DIR/llvm" -B "$BUILD_DIR" -G Ninja \
   -DLLVM_ENABLE_THREADS=OFF -DLLVM_ENABLE_PTHREADS=OFF \
   -DMLIR_ENABLE_THREADING=OFF -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
 
-echo "Building minimal MLIR libs (this will take a while)"
+echo "Building MLIR libs (this will take a while)"
 cmake --build "$BUILD_DIR" --target \
   MLIRParser MLIRAsmParser MLIRBytecodeReader MLIRIR MLIRSupport \
-  MLIRFuncDialect MLIRArithDialect MLIRSCFDialect
+  MLIRFuncDialect MLIRArithDialect MLIRSCFDialect MLIRControlFlowDialect \
+  MLIRMemRefDialect MLIRTensorDialect MLIRMathDialect MLIRDLTIDialect \
+  MLIRVectorDialect MLIRLinalgDialect MLIRLLVMDialect MLIRSPIRVDialect \
+  MLIRTransformDialect MLIRBufferizationDialect MLIRSparseTensorDialect \
+  MLIROpenMPDialect MLIRGPUDialect MLIRTosaDialect MLIRAsyncDialect \
+  MLIREmitCDialect MLIRShapeDialect
 
 echo
 echo "Success. Use these settings for WASM builds:"

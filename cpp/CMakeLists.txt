@@ -72,6 +72,21 @@ append_dialect_if_available(MLIRTensorDialect         HAVE_MLIR_TENSOR_DIALECT)
 append_dialect_if_available(MLIRMathDialect           HAVE_MLIR_MATH_DIALECT)
 append_dialect_if_available(MLIRDLTIDialect           HAVE_MLIR_DLTI_DIALECT)
 
+# Additional common dialects seen in StableHLO corpora
+append_dialect_if_available(MLIRVectorDialect         HAVE_MLIR_VECTOR_DIALECT)
+append_dialect_if_available(MLIRLinalgDialect         HAVE_MLIR_LINALG_DIALECT)
+append_dialect_if_available(MLIRLLVMDialect           HAVE_MLIR_LLVM_DIALECT)
+append_dialect_if_available(MLIRSPIRVDialect          HAVE_MLIR_SPIRV_DIALECT)
+append_dialect_if_available(MLIRTransformDialect      HAVE_MLIR_TRANSFORM_DIALECT)
+append_dialect_if_available(MLIRBufferizationDialect  HAVE_MLIR_BUFFERIZATION_DIALECT)
+append_dialect_if_available(MLIRSparseTensorDialect   HAVE_MLIR_SPARSE_TENSOR_DIALECT)
+append_dialect_if_available(MLIROpenMPDialect         HAVE_MLIR_OMP_DIALECT)
+append_dialect_if_available(MLIRGPUDialect            HAVE_MLIR_GPU_DIALECT)
+append_dialect_if_available(MLIRTosaDialect           HAVE_MLIR_TOSA_DIALECT)
+append_dialect_if_available(MLIRAsyncDialect          HAVE_MLIR_ASYNC_DIALECT)
+append_dialect_if_available(MLIREmitCDialect          HAVE_MLIR_EMITC_DIALECT)
+append_dialect_if_available(MLIRShapeDialect          HAVE_MLIR_SHAPE_DIALECT)
+
 # Link libraries
 # Note: order matters on some toolchains; MLIR first, then LLVM support
 

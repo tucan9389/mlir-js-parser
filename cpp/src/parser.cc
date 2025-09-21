@@ -36,8 +36,59 @@
 #include "mlir/Dialect/Math/IR/Math.h"
 #endif
 // Optional/common attrs
-#ifdef HAVE_MLIR_DLTI_DIALECT
+// Some environments may have the DLTI library but not expose headers in the include paths.
+// Use __has_include to avoid hard errors when headers are missing.
+#if defined(HAVE_MLIR_DLTI_DIALECT) && __has_include("mlir/Dialect/DLTI/IR/DLTI.h")
+#define HAVE_DLTI_HEADER 1
 #include "mlir/Dialect/DLTI/IR/DLTI.h"
+#endif
+// More dialects (conditionally included)
+#ifdef HAVE_MLIR_VECTOR_DIALECT
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
+#endif
+#ifdef HAVE_MLIR_LINALG_DIALECT
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#endif
+#ifdef HAVE_MLIR_LLVM_DIALECT
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#endif
+#ifdef HAVE_MLIR_SPIRV_DIALECT
+#if __has_include("mlir/Dialect/SPIRV/IR/SPIRVDialect.h")
+#include "mlir/Dialect/SPIRV/IR/SPIRVDialect.h"
+#else
+#include "mlir/Dialect/SPIRV/IR/SPIRVOps.h"
+#endif
+#endif
+#ifdef HAVE_MLIR_TRANSFORM_DIALECT
+#include "mlir/Dialect/Transform/IR/TransformDialect.h"
+#endif
+#ifdef HAVE_MLIR_BUFFERIZATION_DIALECT
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#endif
+#ifdef HAVE_MLIR_SPARSE_TENSOR_DIALECT
+#include "mlir/Dialect/SparseTensor/IR/SparseTensor.h"
+#endif
+#ifdef HAVE_MLIR_OMP_DIALECT
+// Guard OpenMP include as availability varies between builds.
+#if defined(HAVE_MLIR_OMP_DIALECT) && __has_include("mlir/Dialect/OpenMP/OpenMPDialect.h")
+#define HAVE_OPENMP_HEADER 1
+#include "mlir/Dialect/OpenMP/OpenMPDialect.h"
+#endif
+#endif
+#ifdef HAVE_MLIR_GPU_DIALECT
+#include "mlir/Dialect/GPU/IR/GPUDialect.h"
+#endif
+#ifdef HAVE_MLIR_TOSA_DIALECT
+#include "mlir/Dialect/Tosa/IR/TosaOps.h"
+#endif
+#ifdef HAVE_MLIR_ASYNC_DIALECT
+#include "mlir/Dialect/Async/IR/Async.h"
+#endif
+#ifdef HAVE_MLIR_EMITC_DIALECT
+#include "mlir/Dialect/EmitC/IR/EmitC.h"
+#endif
+#ifdef HAVE_MLIR_SHAPE_DIALECT
+#include "mlir/Dialect/Shape/IR/Shape.h"
 #endif
 
 // LLVM support headers used by the parser
@@ -72,8 +123,49 @@ void registerDialects(MLIRContext &ctx) {
   ctx.getOrLoadDialect<mlir::math::MathDialect>();
   #endif
   // Data layout common attribute dialect (safe to register; no heavy deps)
-  #ifdef HAVE_MLIR_DLTI_DIALECT
+  #if defined(HAVE_DLTI_HEADER)
   ctx.getOrLoadDialect<mlir::dlti::DLTIDialect>();
+  #endif
+  #ifdef HAVE_MLIR_VECTOR_DIALECT
+  ctx.getOrLoadDialect<mlir::vector::VectorDialect>();
+  #endif
+  #ifdef HAVE_MLIR_LINALG_DIALECT
+  ctx.getOrLoadDialect<mlir::linalg::LinalgDialect>();
+  #endif
+  #ifdef HAVE_MLIR_LLVM_DIALECT
+  ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
+  #endif
+  #ifdef HAVE_MLIR_SPIRV_DIALECT
+  ctx.getOrLoadDialect<mlir::spirv::SPIRVDialect>();
+  #endif
+  #ifdef HAVE_MLIR_TRANSFORM_DIALECT
+  ctx.getOrLoadDialect<mlir::transform::TransformDialect>();
+  #endif
+  #ifdef HAVE_MLIR_BUFFERIZATION_DIALECT
+  ctx.getOrLoadDialect<mlir::bufferization::BufferizationDialect>();
+  #endif
+  #ifdef HAVE_MLIR_SPARSE_TENSOR_DIALECT
+  ctx.getOrLoadDialect<mlir::sparse_tensor::SparseTensorDialect>();
+  #endif
+  #ifdef HAVE_MLIR_OMP_DIALECT
+  #if defined(HAVE_OPENMP_HEADER)
+  ctx.getOrLoadDialect<mlir::omp::OpenMPDialect>();
+  #endif
+  #endif
+  #ifdef HAVE_MLIR_GPU_DIALECT
+  ctx.getOrLoadDialect<mlir::gpu::GPUDialect>();
+  #endif
+  #ifdef HAVE_MLIR_TOSA_DIALECT
+  ctx.getOrLoadDialect<mlir::tosa::TosaDialect>();
+  #endif
+  #ifdef HAVE_MLIR_ASYNC_DIALECT
+  ctx.getOrLoadDialect<mlir::async::AsyncDialect>();
+  #endif
+  #ifdef HAVE_MLIR_EMITC_DIALECT
+  ctx.getOrLoadDialect<mlir::emitc::EmitCDialect>();
+  #endif
+  #ifdef HAVE_MLIR_SHAPE_DIALECT
+  ctx.getOrLoadDialect<mlir::shape::ShapeDialect>();
   #endif
 }
 
