@@ -36,6 +36,10 @@ Browser:
 
 See `wasm/sample/` for ready-to-run examples.
 
+- Basic: `node wasm/sample/node.mjs`
+- JSON: `node wasm/sample/run-json.mjs`
+- Dialects (func/arith/scf): `node wasm/sample/dialects-demo.mjs`
+
 ### Example
 
 Input MLIR:
@@ -59,25 +63,25 @@ Output (summary):
 }
 ```
 
-Note: The minimal bundle registers only Builtin. Ops from other dialects will fail until those dialects are enabled and linked.
+Note: The default bundle now registers Builtin + Func + Arith + SCF. Ops from other dialects (e.g., Tensor) will fail until those dialects are enabled and linked.
 
 ## Dialect support
 
-The minimal bundle registers only the Builtin dialect. Additional dialects can be enabled by registering them in C++ and linking their MLIR libraries.
+The default bundle registers Builtin + Func + Arith + SCF. Additional dialects can be enabled by registering them in C++ and linking their MLIR libraries.
 
 | Dialect | Status | How to enable (summary) |
 | --- | --- | --- |
 | Builtin | Supported (default) | No action required |
-| func | Planned | Register `mlir::func::FuncDialect`; link `MLIRFuncDialect` |
-| arith | Planned | Register `mlir::arith::ArithDialect`; link `MLIRArithDialect` |
-| scf | Planned | Register `mlir::scf::SCFDialect`; link `MLIRSCFDialect` |
+| func | Supported (default) | Included by default (registered + linked) |
+| arith | Supported (default) | Included by default (registered + linked) |
+| scf | Supported (default) | Included by default (registered + linked) |
 | tensor | Planned | Register `mlir::tensor::TensorDialect`; link `MLIRTensorDialect` |
 
 See `docs/ADD-DIALECTS.md` for step-by-step instructions.
 
 ## Status
 
-- Default: Minimal bundle with only the Builtin dialect registered
+- Default: Bundle with Builtin + Func + Arith + SCF registered
 - Ready today: Use the prebuilt artifacts in `wasm/` directly in Node or browsers
 - Extensible: Add common dialects like `func`, `arith`, `scf`, `tensor` as needed by following the docs
 
@@ -92,7 +96,7 @@ Approximate bundle sizes (vary by toolchain and flags):
 - `wasm/mlir_parser.wasm`: ~1.14 MB (raw) / ~390 KB (gzip)
 - `wasm/bindings.js`: ~3.4 KB (raw) / ~0.8 KB (gzip)
 
-Generate a fresh size report (raw/gzip/brotli) and update `docs/SIZES.md`:
+Bundle sizes vary by enabled dialects. Generate a fresh size report (raw/gzip/brotli) and update `docs/SIZES.md`:
 
 ```bash
 npm run size:report
@@ -121,6 +125,14 @@ npm run sample:json
 ```
 
 You should see a structured JSON object for a module with attributes.
+
+1. Try a multi-dialect demo (func/arith/scf)
+
+```bash
+node wasm/sample/dialects-demo.mjs
+```
+
+You should see JSON that includes `func.func`, `arith.*`, and `scf.*` operations.
 
 1. Open the browser sample
 
@@ -202,6 +214,8 @@ LLVM_DIR=...</path/to/wasm/llvm> MLIR_DIR=...</path/to/wasm/llvm> \
 
 Artifacts will be written to `wasm/mlir_parser.{js,wasm}`. See `docs/ADD-DIALECTS.md` for details and common dialect sets.
 
+CI note: Snapshot tests build the WASM parser first (including required MLIR dialect libs) and then run Vitest snapshots with the generated artifacts.
+
 ## Docs & sizes
 
 - Build guide: `docs/BUILD.md`
@@ -212,7 +226,7 @@ Artifacts will be written to `wasm/mlir_parser.{js,wasm}`. See `docs/ADD-DIALECT
 
 - Node ESM issues: use Node v18+ and ensure your script runs as an ES module.
 - In browsers, serve over HTTP(s) (not `file://`) so the `.wasm` can be fetched.
-- Minimal bundle registers Builtin only. If `func`/`arith` ops fail, add those dialects and rebuild.
+- Default bundle registers Builtin + Func + Arith + SCF. If ops from other dialects (e.g., Tensor) fail, add those dialects and rebuild.
 
 ## License
 

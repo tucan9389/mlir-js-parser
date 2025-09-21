@@ -30,7 +30,9 @@ emcmake cmake -S "$SRC_DIR/llvm" -B "$BUILD_DIR" -G Ninja \
   -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
 
 echo "Building minimal MLIR libs (this will take a while)"
-cmake --build "$BUILD_DIR" --target MLIRParser MLIRAsmParser MLIRBytecodeReader MLIRIR MLIRSupport
+cmake --build "$BUILD_DIR" --target \
+  MLIRParser MLIRAsmParser MLIRBytecodeReader MLIRIR MLIRSupport \
+  MLIRFuncDialect MLIRArithDialect MLIRSCFDialect
 
 echo
 echo "Success. Use these settings for WASM builds:"

@@ -130,7 +130,7 @@ Implemented (initial):
 
 Notes:
 
-- The minimal bundle registers only Builtin; so `module {}` parses, but `module` regions do not accept block arguments. To test block-argument `loc`, enable a dialect with region arguments (e.g., `func`) and parse `func.func`.
+- The bundle includes Builtin + Func + Arith + SCF. `func.func` regions accept block arguments, so block-argument `loc` is available by default. See snapshot `tests/snapshot/core/func-block-arg-loc.test.js`.
 - The JSON writer orders object keys (you may see `column, file, line`). Write assertions independent of key order.
 
 Examples:

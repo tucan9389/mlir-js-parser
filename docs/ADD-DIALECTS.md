@@ -1,6 +1,6 @@
 # Add MLIR dialects
 
-You can extend the set of registered dialects and rebuild the WASM to parse additional MLIR constructs.
+The default bundle includes Builtin + Func + Arith + SCF. You can extend the set of registered dialects and rebuild the WASM to parse additional MLIR constructs.
 
 This document explains:
 
@@ -77,4 +77,4 @@ Generated files will appear in `wasm/mlir_parser.{js,wasm}`.
 - Many dialects also depend on others (e.g., `Tensor` on `Arith`); link all needed libs.
 - If you need advanced passes or serialization (bytecode/asm), you may need to link `MLIRAsmParser` or `MLIRBytecodeReader` as well. This project already links the minimal set for parsing text.
 
-- Source locations (loc): The core bundle includes `loc` for operations and block arguments in the JSON output. To test block-argument `loc`, enable a dialect that uses region arguments (e.g., `func`) and parse a `func.func` with parameters.
+- Source locations (loc): The bundle includes `loc` for operations and block arguments in the JSON output. To test block-argument `loc`, parse a `func.func` with parameters (Func dialect is included by default).

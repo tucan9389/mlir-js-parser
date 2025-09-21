@@ -7,6 +7,7 @@ This guide explains how to build the WASM bundle yourself and how to run a nativ
 - For WebAssembly, you must use an LLVM/MLIR toolchain built with Emscripten.
 
 If you don't need to customize dialects, you can skip this guide and use the prebuilt files in `wasm/`.
+CI note: Snapshot tests build the WASM artifacts first (with Emscripten and the required MLIR dialect libs) and then run Vitest snapshots against those artifacts.
 
 ## Prerequisites
 

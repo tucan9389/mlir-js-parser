@@ -44,6 +44,10 @@ set(mlir_libs
   MLIRIR
   MLIRParser
   MLIRSupport
+  # Common dialect libraries
+  MLIRFuncDialect
+  MLIRArithDialect
+  MLIRSCFDialect
 )
 
 # Link libraries

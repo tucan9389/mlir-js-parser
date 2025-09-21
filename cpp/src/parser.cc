@@ -19,6 +19,11 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Pass/PassManager.h"
 
+// Dialects: func, arith, scf
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+
 // LLVM support headers used by the parser
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/MemoryBuffer.h"
@@ -33,7 +38,10 @@ namespace {
 // Helper to register a minimal set of dialects. Expand here over time.
 void registerDialects(MLIRContext &ctx) {
   ctx.getOrLoadDialect<BuiltinDialect>();
-  // TODO: add more dialect registrations as needed.
+  // Common dialects
+  ctx.getOrLoadDialect<mlir::func::FuncDialect>();
+  ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
+  ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
 }
 
 // Serialize a Type to a string (best-effort).
