@@ -15,6 +15,7 @@
 /node_modules/
 
 # Test/coverage artifacts
+tmp/
 coverage/
 .vitest/
 
