@@ -10,9 +10,13 @@
     "build:wasm": "bash scripts/build-wasm.sh",
     "sample:node": "node wasm/sample/node.mjs",
     "serve": "npx http-server wasm/sample",
-    "size:report": "node scripts/size-report.mjs"
+    "size:report": "node scripts/size-report.mjs",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ci": "vitest run --config vitest.config.mjs --reporter=dot"
   },
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "vitest": "^1.6.0"
   }
 }
