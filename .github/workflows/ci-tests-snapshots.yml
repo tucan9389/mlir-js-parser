@@ -7,23 +7,37 @@ on:
     branches: [ main ]
 
 jobs:
-  vitest-snapshots:
+  snapshots:
+    name: snapshots (node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node: [18, 20, 22]
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js ${{ matrix.node }}
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node }}
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run snapshot tests
+      - name: Run snapshot tests (vitest)
         run: npm run test:snap:run
+        env:
+          CI: true
+
+      - name: Upload snapshot diffs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-snapshots-diff
+          path: |
+            tests/snapshot/**/__snapshots__/**
+            **/vitest-output.log
+          if-no-files-found: ignore
