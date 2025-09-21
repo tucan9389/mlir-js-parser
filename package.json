@@ -9,13 +9,15 @@
     "build:native": "bash scripts/build-native.sh",
     "build:wasm": "bash scripts/build-wasm.sh",
     "sample:node": "node wasm/sample/node.mjs",
+  "sample:json": "node wasm/sample/run-json.mjs",
     "serve": "npx http-server wasm/sample",
     "size:report": "node scripts/size-report.mjs",
     "test": "vitest",
     "test:run": "vitest run",
     "test:ci": "vitest run --config vitest.config.mjs --reporter=dot",
     "test:snap": "vitest --config vitest.snap.config.mjs",
-    "test:snap:run": "vitest run --config vitest.snap.config.mjs --reporter=dot"
+    "test:snap:run": "vitest run --config vitest.snap.config.mjs --reporter=dot",
+    "test:all": "npm run test:ci && npm run test:snap:run"
   },
   "devDependencies": {
     "http-server": "^14.1.1",

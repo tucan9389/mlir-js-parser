@@ -53,5 +53,7 @@ describe('Basic MLIR structure', () => {
     expect(typeof res.error).toBe('string');
     // Don’t assert exact message; toolchains vary. Just ensure non-empty.
     expect(res.error.length).toBeGreaterThan(0);
+    // Should include a line:col hint like "<input>:1:..." or similar
+    expect(/:\d+:\d+/.test(res.error)).toBe(true);
   });
 });

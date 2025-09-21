@@ -30,12 +30,14 @@ These tests are directly tied to the project's viability. They ensure the most b
 Implemented (initial):
 
 - Added Vitest with a foundational test at `tests/unit/core/basic-structure.test.js`.
+- [x] Added a unit test for round-trip text API at `tests/unit/core/parse-mlir-api.test.js`.
 - What it checks:
-  - Parses `module {}` successfully and asserts minimal JSON shape: name, regions/blocks, operands/results arrays.
-  - Reports a readable error for malformed input (negative case).
+    - Parses `module {}` successfully and asserts minimal JSON shape: name, regions/blocks, operands/results arrays.
+    - Reports a readable error for malformed input (negative case).
+    - `parseMlir` returns canonical MLIR text for valid input and a non-empty error message for malformed input.
 - How to run locally:
-  - `npm install`
-  - `npm run test:run` (or `npm test` for watch/interactive mode)
+    - `npm install`
+    - `npm run test:run` (or `npm test` for watch/interactive mode)
 - CI:
     - GitHub Actions workflow `tests-node` runs on Node 18/20/22 via `.github/workflows/ci-tests-node.yml`.
 

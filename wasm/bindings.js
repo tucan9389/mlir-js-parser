@@ -28,9 +28,13 @@ export async function createParserModule(moduleFactory) {
       }
       if (rc < 0) {
         const need = -rc;
+        // Grow both buffers to be safe (API doesn't distinguish which one was short)
         Module._free(outPtr);
+        Module._free(errPtr);
         outPtr = Module._malloc(need);
+        errPtr = Module._malloc(need);
         outCap = need;
+        errCap = need;
         rc = c_mlir(text, outPtr, outCap, errPtr, errCap);
         if (rc === 0) {
           const outStr = Module.UTF8ToString(outPtr);
@@ -66,9 +70,13 @@ export async function createParserModule(moduleFactory) {
       }
       if (rc < 0) {
         const need = -rc;
+        // Grow both buffers to be safe
         Module._free(outPtr);
+        Module._free(errPtr);
         outPtr = Module._malloc(need);
+        errPtr = Module._malloc(need);
         outCap = need;
+        errCap = need;
         rc = c_mlir_json(text, outPtr, outCap, errPtr, errCap);
         if (rc === 0) {
           const outStr = Module.UTF8ToString(outPtr);

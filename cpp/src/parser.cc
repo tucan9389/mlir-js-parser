@@ -8,10 +8,12 @@
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/Location.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Support/LLVM.h"
@@ -166,20 +168,43 @@ extern "C" int mlir_parse_to_string(const char *mlir_text,
   MLIRContext ctx;
   registerDialects(ctx);
 
+  // Prepare to capture diagnostics with file:line:col.
+  std::string diagStr;
+  llvm::raw_string_ostream diagOS(diagStr);
+  auto handlerId = ctx.getDiagEngine().registerHandler([&](Diagnostic &diag) {
+    // Try to prefix with file:line:col if available
+    mlir::Location loc = diag.getLocation();
+    if (mlir::isa<mlir::FileLineColLoc>(loc)) {
+      auto fileLoc = mlir::cast<mlir::FileLineColLoc>(loc);
+      auto filename = fileLoc.getFilename().str();
+      diagOS << filename << ":" << fileLoc.getLine() << ":" << fileLoc.getColumn() << ": ";
+    }
+    diag.print(diagOS);
+    diagOS << '\n';
+  });
+
   // Parse the module from the provided text.
   llvm::SourceMgr sourceMgr;
   auto memBuffer = llvm::MemoryBuffer::getMemBuffer(mlir_text, "<input>", false);
   sourceMgr.AddNewSourceBuffer(std::move(memBuffer), llvm::SMLoc());
+  // Note: We rely on DiagnosticEngine printing locations from the parsed IR.
 
   OwningOpRef<ModuleOp> module = parseSourceFile<ModuleOp>(sourceMgr, &ctx);
   if (!module) {
-    const char *msg = "failed to parse MLIR";
+    diagOS.flush();
+    ctx.getDiagEngine().eraseHandler(handlerId);
+    // Return detailed diagnostics if available.
+    const std::string &msg = diagStr.empty() ? std::string("failed to parse MLIR") : diagStr;
+    int needed = static_cast<int>(msg.size()) + 1;
+    if (err_capacity < needed)
+      return -needed; // signal insufficient error buffer capacity
     if (err_buffer && err_capacity > 0) {
-      std::strncpy(err_buffer, msg, err_capacity - 1);
-      err_buffer[err_capacity - 1] = '\0';
+      std::memcpy(err_buffer, msg.c_str(), needed);
     }
     return 2;
   }
+
+  ctx.getDiagEngine().eraseHandler(handlerId);
 
   // Print canonical text to a string.
   std::string result;
@@ -214,20 +239,41 @@ extern "C" int mlir_parse_to_json(const char *mlir_text,
   MLIRContext ctx;
   registerDialects(ctx);
 
+  // Prepare to capture diagnostics with file:line:col.
+  std::string diagStr;
+  llvm::raw_string_ostream diagOS(diagStr);
+  auto handlerId = ctx.getDiagEngine().registerHandler([&](Diagnostic &diag) {
+    mlir::Location loc = diag.getLocation();
+    if (mlir::isa<mlir::FileLineColLoc>(loc)) {
+      auto fileLoc = mlir::cast<mlir::FileLineColLoc>(loc);
+      auto filename = fileLoc.getFilename().str();
+      diagOS << filename << ":" << fileLoc.getLine() << ":" << fileLoc.getColumn() << ": ";
+    }
+    diag.print(diagOS);
+    diagOS << '\n';
+  });
+
   // Parse the module from the provided text.
   llvm::SourceMgr sourceMgr;
   auto memBuffer = llvm::MemoryBuffer::getMemBuffer(mlir_text, "<input>", false);
   sourceMgr.AddNewSourceBuffer(std::move(memBuffer), llvm::SMLoc());
+  // Note: We rely on DiagnosticEngine printing locations from the parsed IR.
 
   OwningOpRef<ModuleOp> module = parseSourceFile<ModuleOp>(sourceMgr, &ctx);
   if (!module) {
-    const char *msg = "failed to parse MLIR";
+    diagOS.flush();
+    ctx.getDiagEngine().eraseHandler(handlerId);
+    const std::string &msg = diagStr.empty() ? std::string("failed to parse MLIR") : diagStr;
+    int needed = static_cast<int>(msg.size()) + 1;
+    if (err_capacity < needed)
+      return -needed; // signal insufficient error buffer capacity
     if (err_buffer && err_capacity > 0) {
-      std::strncpy(err_buffer, msg, err_capacity - 1);
-      err_buffer[err_capacity - 1] = '\0';
+      std::memcpy(err_buffer, msg.c_str(), needed);
     }
     return 2;
   }
+
+  ctx.getDiagEngine().eraseHandler(handlerId);
 
   // Build JSON from IR (root op is the module itself)
   llvm::json::Object root = opToJson(module.get());

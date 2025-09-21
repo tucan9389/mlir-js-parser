@@ -89,8 +89,8 @@ For build/extension guides:
 Approximate bundle sizes (vary by toolchain and flags):
 
 - `wasm/mlir_parser.js`: ~62 KB (raw) / ~18 KB (gzip)
-- `wasm/mlir_parser.wasm`: ~1.1 MB (raw) / ~398 KB (gzip)
-- `wasm/bindings.js`: ~3 KB (raw) / ~0.8 KB (gzip)
+- `wasm/mlir_parser.wasm`: ~1.14 MB (raw) / ~390 KB (gzip)
+- `wasm/bindings.js`: ~3.4 KB (raw) / ~0.8 KB (gzip)
 
 Generate a fresh size report (raw/gzip/brotli) and update `docs/SIZES.md`:
 
@@ -114,6 +114,14 @@ npm run sample:node
 
 You should see `{ ok: true, ... }` with parsed output.
 
+1. (Optional) Try JSON output locally
+
+```bash
+npm run sample:json
+```
+
+You should see a structured JSON object for a module with attributes.
+
 1. Open the browser sample
 
 Serve `wasm/sample/` and open `index.html`:
@@ -132,6 +140,7 @@ Click Parse to see results.
     - `Module`: The Emscripten module (advanced use)
     - `parseMlirJson(text: string)`: Synchronous parse → `{ ok: true, json } | { ok: false, error }`
     - `parseMlir(text: string)`: Returns canonical MLIR text (useful for debugging)
+  - Errors: When parsing fails, `error` includes detailed diagnostics with `file:line:column: message` where available.
 
 ## Add dialects
 
