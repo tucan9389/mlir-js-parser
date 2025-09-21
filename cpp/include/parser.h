@@ -16,15 +16,17 @@ int mlir_parse_to_string(const char* mlir_text,
 // Parses MLIR text and serializes the IR to a structured JSON string.
 // Returns 0 on success; non-zero on error. If the output buffer is too small,
 // returns a negative value with the required size.
-// JSON schema (simplified):
+// JSON schema (simplified, actual fields):
 // {
-//   "op": "builtin.module",
-//   "name": "module",
-//   "attributes": { ... },
+//   "name": "builtin.module",               // operation name (e.g., dialect.op)
+//   "loc": { "file": string, "line": number, "column": number } | { "unknown": true },
+//   "attributes": { ... },                   // dictionary of attributes
+//   "operands": [ { "type": string }, ... ],
+//   "results":  [ { "type": string }, ... ],
 //   "regions": [
 //     { "blocks": [
-//         { "arguments": [ {"type": "i32"}, ... ],
-//           "operations": [ { "name": "...", "attributes": {...}, "operands": [ {"type": "..."}, ... ], "results": ["..."], "regions": [...] } ]
+//         { "arguments": [ { "type": string, "loc": { ... } }, ... ],
+//           "operations": [ { /* recursively the same object shape */ } ]
 //         }
 //       ]
 //     }
