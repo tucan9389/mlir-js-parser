@@ -1,0 +1,57 @@
+name: build-wasm
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Emscripten (emsdk)
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.40
+
+      - name: Cache llvm-project source and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ../llvm-project
+            ../llvm-project/build-wasm
+          key: ${{ runner.os }}-emsdk-${{ steps.emsdk-version.outputs.version || '3.1.40' }}-llvm-wasm-${{ hashFiles('scripts/bootstrap-llvm-wasm.sh') }}
+
+      - name: Bootstrap LLVM/MLIR for WASM
+        run: |
+          bash scripts/bootstrap-llvm-wasm.sh
+
+      - name: Build WASM parser
+        env:
+          LLVM_DIR: ${{ github.workspace }}/../llvm-project/build-wasm
+          MLIR_DIR: ${{ github.workspace }}/../llvm-project/build-wasm
+        run: |
+          bash scripts/build-wasm.sh
+
+      - name: Upload wasm artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-artifacts
+          path: |
+            wasm/mlir_parser.js
+            wasm/mlir_parser.wasm
+          if-no-files-found: error
