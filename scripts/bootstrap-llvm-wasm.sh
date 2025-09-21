@@ -20,25 +20,39 @@ if [[ ! -d "$SRC_DIR/llvm" ]]; then
 fi
 
 echo "Configuring LLVM/MLIR (WASM) at: $BUILD_DIR"
+TESTING_FLAGS="-DLLVM_INCLUDE_TESTS=OFF -DMLIR_INCLUDE_TESTS=OFF -DMLIR_BUILD_TEST_LIBS=OFF"
+if [[ "${ENABLE_TESTING:-}" == "1" ]]; then
+  echo "Enabling LLVM/MLIR testing components (ENABLE_TESTING=1)"
+  TESTING_FLAGS="-DLLVM_INCLUDE_TESTS=ON -DMLIR_INCLUDE_TESTS=ON -DMLIR_BUILD_TEST_LIBS=ON"
+fi
+
 emcmake cmake -S "$SRC_DIR/llvm" -B "$BUILD_DIR" -G Ninja \
   -DLLVM_ENABLE_PROJECTS="mlir" \
   -DLLVM_TARGETS_TO_BUILD=WebAssembly \
   -DLLVM_ENABLE_RTTI=ON \
   -DCMAKE_BUILD_TYPE=Release \
-  -DLLVM_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF \
+  ${TESTING_FLAGS} -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF \
   -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF -DLLVM_ENABLE_TERMINFO=OFF \
   -DLLVM_ENABLE_THREADS=OFF -DLLVM_ENABLE_PTHREADS=OFF \
   -DMLIR_ENABLE_THREADING=OFF -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
 
 echo "Building MLIR libs (this will take a while)"
-cmake --build "$BUILD_DIR" --target \
-  MLIRParser MLIRAsmParser MLIRBytecodeReader MLIRIR MLIRSupport \
-  MLIRFuncDialect MLIRArithDialect MLIRSCFDialect MLIRControlFlowDialect \
-  MLIRMemRefDialect MLIRTensorDialect MLIRMathDialect MLIRDLTIDialect \
-  MLIRVectorDialect MLIRLinalgDialect MLIRLLVMDialect MLIRSPIRVDialect \
-  MLIRTransformDialect MLIRBufferizationDialect MLIRSparseTensorDialect \
-  MLIROpenMPDialect MLIRGPUDialect MLIRTosaDialect MLIRAsyncDialect \
+targets=(
+  MLIRParser MLIRAsmParser MLIRBytecodeReader MLIRIR MLIRSupport
+  MLIRFuncDialect MLIRArithDialect MLIRSCFDialect MLIRControlFlowDialect
+  MLIRMemRefDialect MLIRTensorDialect MLIRMathDialect MLIRDLTIDialect
+  MLIRVectorDialect MLIRLinalgDialect MLIRLLVMDialect MLIRSPIRVDialect
+  MLIRTransformDialect MLIRBufferizationDialect MLIRSparseTensorDialect
+  MLIROpenMPDialect MLIRGPUDialect MLIRTosaDialect MLIRAsyncDialect
   MLIREmitCDialect MLIRShapeDialect
+)
+if [[ "${ENABLE_TESTING:-}" == "1" ]]; then
+  # Build available MLIR Test libraries when testing is enabled
+  # Note: There is no upstream 'MLIRCheckDialect' target.
+  targets+=( MLIRTestDialect )
+fi
+
+cmake --build "$BUILD_DIR" --target ${targets[@]}
 
 echo
 echo "Success. Use these settings for WASM builds:"

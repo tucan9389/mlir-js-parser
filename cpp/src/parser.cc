@@ -111,6 +111,17 @@
 #include "mlir/Dialect/Shape/IR/Shape.h"
 #endif
 
+// Optional testing dialects (register only if available)
+#ifdef HAVE_MLIR_TEST_DIALECT
+#  if __has_include("mlir/Dialect/Test/IR/TestDialect.h")
+#    include "mlir/Dialect/Test/IR/TestDialect.h"
+#    define HAVE_TEST_HEADER 1
+#  elif __has_include("mlir/IR/TestDialect.h")
+#    include "mlir/IR/TestDialect.h"
+#    define HAVE_TEST_HEADER 1
+#  endif
+#endif
+
 // StableHLO external dialects (optional)
 #if defined(HAVE_STABLEHLO_DIALECT)
 #  if __has_include("stablehlo/dialect/StablehloOps.h")
@@ -169,11 +180,16 @@ struct VhloStubDialect : public Dialect {
     allowUnknownTypes();
   }
 };
+// Note: We intentionally do not stub 'check' or 'test' dialects because many
+// of their ops rely on custom assembly/attribute parsing; a stub would cause
+// harder-to-diagnose parse errors. If available in the MLIR build, we load the
+// real dialects below; otherwise we rely on allowUnregisteredDialects.
 // Helper to register a minimal set of dialects. Expand here over time.
 void registerDialects(MLIRContext &ctx) {
-  // If available, wire up Transform dialect extensions via a DialectRegistry.
-  // This enables ops like transform.structured.match which live in extensions.
-  #if defined(HAVE_TRANSFORM_EXTENSIONS_HEADER)
+  // If available, wire up Transform dialect extensions via a DialectRegistry,
+  // but only when the extensions library is actually linked in (to avoid
+  // unresolved calls turning into no-ops under Emscripten).
+  #if defined(HAVE_TRANSFORM_EXTENSIONS_HEADER) && defined(HAVE_MLIR_TRANSFORM_DIALECT_EXTENSIONS)
   {
     DialectRegistry reg;
     mlir::transform::registerTransformDialectExtension(reg);
@@ -222,7 +238,9 @@ void registerDialects(MLIRContext &ctx) {
   #ifdef HAVE_MLIR_SPIRV_DIALECT
   ctx.getOrLoadDialect<mlir::spirv::SPIRVDialect>();
   #endif
-  #ifdef HAVE_MLIR_TRANSFORM_DIALECT
+  // Load the Transform dialect when available (even if extensions are not
+  // linked). Extensions are conditionally registered above.
+  #if defined(HAVE_MLIR_TRANSFORM_DIALECT)
   ctx.getOrLoadDialect<mlir::transform::TransformDialect>();
   #endif
   #ifdef HAVE_MLIR_BUFFERIZATION_DIALECT
@@ -271,6 +289,11 @@ void registerDialects(MLIRContext &ctx) {
   #endif
   #if !defined(HAVE_VHLO_HEADER)
   ctx.getOrLoadDialect<VhloStubDialect>();
+  #endif
+
+  // Test dialect: load only if available in the linked MLIR build.
+  #if defined(HAVE_TEST_HEADER)
+  ctx.getOrLoadDialect<mlir::test::TestDialect>();
   #endif
 }
 

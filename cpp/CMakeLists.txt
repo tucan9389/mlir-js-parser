@@ -93,6 +93,9 @@ append_dialect_if_available(MLIRShapeDialect          HAVE_MLIR_SHAPE_DIALECT)
 # Optional: Index dialect (core MLIR) if present
 append_dialect_if_available(MLIRIndexDialect          HAVE_MLIR_INDEX_DIALECT)
 
+# Optional: MLIR Test dialects (present only when MLIR built with tests)
+append_dialect_if_available(MLIRTestDialect           HAVE_MLIR_TEST_DIALECT)
+
 # Optional: External StableHLO family (provide STABLEHLO_LIB_DIR and STABLEHLO_INCLUDE_DIR)
 if(STABLEHLO_LIB_DIR)
   function(append_extlib_if_available lib macro)
