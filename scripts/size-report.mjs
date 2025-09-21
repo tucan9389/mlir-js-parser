@@ -13,6 +13,9 @@ function measure(file) {
   return { raw: b.length, gz: gz.length, br: br.length };
 }
 
+// Optional label via CLI arg or env
+const label = process.argv[2] || process.env.SIZE_LABEL || 'current';
+
 const files = {
   js: 'wasm/mlir_parser.js',
   wasm: 'wasm/mlir_parser.wasm',
@@ -41,4 +44,4 @@ console.log('TOTAL:', `raw ${fmtBytes(total.raw)}, gz ${fmtBytes(total.gz)}, br 
 console.log('\nMarkdown row (paste into README table):');
 const jsGz = m.js.gz + m.bindings.gz;
 const jsBr = m.js.br + m.bindings.br;
-console.log(`| builtin only | ${fmtBytes(m.wasm.raw)} | ${fmtBytes(m.wasm.gz)} | ${fmtBytes(m.wasm.br)} | ${fmtBytes(jsGz)} | ${fmtBytes(total.gz)} | ${fmtBytes(total.br)} |`);
+console.log(`| ${label} | ${fmtBytes(m.wasm.raw)} | ${fmtBytes(m.wasm.gz)} | ${fmtBytes(m.wasm.br)} | ${fmtBytes(jsGz)} | ${fmtBytes(total.gz)} | ${fmtBytes(total.br)} |`);

@@ -51,3 +51,21 @@ echo "  emcmake cmake -S $ROOT_DIR/cpp -B $ROOT_DIR/build/wasm -G Ninja \\\" \
      -DLLVM_DIR=\"$BUILD_DIR/lib/cmake/llvm\" \\\" \
      -DMLIR_DIR=\"$BUILD_DIR/lib/cmake/mlir\""
 echo "  cmake --build $ROOT_DIR/build/wasm --target mlir_parser"
+
+echo
+echo "Optional: Build StableHLO (external dialects) for WASM and pass paths to our CMake via STABLEHLO_* vars"
+echo "  git clone https://github.com/openxla/stablehlo.git $SRC_DIR/../stablehlo"
+echo "  emcmake cmake -S $SRC_DIR/../stablehlo -B $SRC_DIR/../stablehlo/build-wasm -G Ninja \\\" \
+  -DCMAKE_BUILD_TYPE=Release \\\" \
+  -DLLVM_DIR=$BUILD_DIR/lib/cmake/llvm \\\" \
+  -DMLIR_DIR=$BUILD_DIR/lib/cmake/mlir"
+echo "  cmake --build $SRC_DIR/../stablehlo/build-wasm"
+echo
+echo "Then rebuild our WASM with:"
+echo "  emcmake cmake -S $ROOT_DIR/cpp -B $ROOT_DIR/build/wasm -G Ninja \\\" \
+  -DCMAKE_BUILD_TYPE=Release \\\" \
+  -DLLVM_DIR=$BUILD_DIR/lib/cmake/llvm \\\" \
+  -DMLIR_DIR=$BUILD_DIR/lib/cmake/mlir \\\" \
+  -DSTABLEHLO_LIB_DIR=$SRC_DIR/../stablehlo/build-wasm/lib \\\" \
+  -DSTABLEHLO_INCLUDE_DIR=$SRC_DIR/../stablehlo"
+echo "  cmake --build $ROOT_DIR/build/wasm --target mlir_parser"

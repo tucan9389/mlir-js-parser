@@ -30,6 +30,8 @@ emcmake cmake -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DLLVM_DIR="$LLVM_DIR/lib/cmake/llvm" \
   -DMLIR_DIR="$MLIR_DIR/lib/cmake/mlir" \
+  ${STABLEHLO_LIB_DIR:+-DSTABLEHLO_LIB_DIR="$STABLEHLO_LIB_DIR"} \
+  ${STABLEHLO_INCLUDE_DIR:+-DSTABLEHLO_INCLUDE_DIR="$STABLEHLO_INCLUDE_DIR"} \
   "$ROOT_DIR/cpp"
 
 cmake --build . --target mlir_parser

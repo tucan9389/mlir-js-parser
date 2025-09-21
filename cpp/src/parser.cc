@@ -11,6 +11,7 @@
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Types.h"
+#include "mlir/IR/Dialect.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Location.h"
@@ -34,6 +35,16 @@
 #endif
 #ifdef HAVE_MLIR_MATH_DIALECT
 #include "mlir/Dialect/Math/IR/Math.h"
+#endif
+// Index dialect (optional)
+#ifdef HAVE_MLIR_INDEX_DIALECT
+#  if __has_include("mlir/Dialect/Index/IR/IndexDialect.h")
+#    include "mlir/Dialect/Index/IR/IndexDialect.h"
+#    define HAVE_INDEX_HEADER 1
+#  elif __has_include("mlir/Dialect/Index/IR/IndexOps.h")
+#    include "mlir/Dialect/Index/IR/IndexOps.h"
+#    define HAVE_INDEX_HEADER 1
+#  endif
 #endif
 // Optional/common attrs
 // Some environments may have the DLTI library but not expose headers in the include paths.
@@ -91,6 +102,26 @@
 #include "mlir/Dialect/Shape/IR/Shape.h"
 #endif
 
+// StableHLO external dialects (optional)
+#if defined(HAVE_STABLEHLO_DIALECT)
+#  if __has_include("stablehlo/dialect/StablehloOps.h")
+#    include "stablehlo/dialect/StablehloOps.h"
+#    define HAVE_STABLEHLO_HEADER 1
+#  endif
+#endif
+#if defined(HAVE_CHLO_DIALECT)
+#  if __has_include("stablehlo/dialect/ChloOps.h")
+#    include "stablehlo/dialect/ChloOps.h"
+#    define HAVE_CHLO_HEADER 1
+#  endif
+#endif
+#if defined(HAVE_VHLO_DIALECT)
+#  if __has_include("stablehlo/dialect/VhloOps.h")
+#    include "stablehlo/dialect/VhloOps.h"
+#    define HAVE_VHLO_HEADER 1
+#  endif
+#endif
+
 // LLVM support headers used by the parser
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/MemoryBuffer.h"
@@ -102,6 +133,33 @@
 using namespace mlir;
 
 namespace {
+// Fallback stub dialects: register a dialect namespace so the parser accepts
+// generic operations like 'stablehlo.foo' even without linking real dialects.
+// This significantly reduces "dialect not found" parse errors during scans.
+struct StablehloStubDialect : public Dialect {
+  static StringRef getDialectNamespace() { return "stablehlo"; }
+  explicit StablehloStubDialect(MLIRContext *ctx)
+      : Dialect("stablehlo", ctx, TypeID::get<StablehloStubDialect>()) {
+    allowUnknownOperations();
+    allowUnknownTypes();
+  }
+};
+struct ChloStubDialect : public Dialect {
+  static StringRef getDialectNamespace() { return "chlo"; }
+  explicit ChloStubDialect(MLIRContext *ctx)
+      : Dialect("chlo", ctx, TypeID::get<ChloStubDialect>()) {
+    allowUnknownOperations();
+    allowUnknownTypes();
+  }
+};
+struct VhloStubDialect : public Dialect {
+  static StringRef getDialectNamespace() { return "vhlo"; }
+  explicit VhloStubDialect(MLIRContext *ctx)
+      : Dialect("vhlo", ctx, TypeID::get<VhloStubDialect>()) {
+    allowUnknownOperations();
+    allowUnknownTypes();
+  }
+};
 // Helper to register a minimal set of dialects. Expand here over time.
 void registerDialects(MLIRContext &ctx) {
   ctx.getOrLoadDialect<BuiltinDialect>();
@@ -122,9 +180,16 @@ void registerDialects(MLIRContext &ctx) {
   #ifdef HAVE_MLIR_MATH_DIALECT
   ctx.getOrLoadDialect<mlir::math::MathDialect>();
   #endif
+  #ifdef HAVE_INDEX_HEADER
+  ctx.getOrLoadDialect<mlir::index::IndexDialect>();
+  #endif
   // Data layout common attribute dialect (safe to register; no heavy deps)
   #if defined(HAVE_DLTI_HEADER)
   ctx.getOrLoadDialect<mlir::dlti::DLTIDialect>();
+  #endif
+
+  #if defined(HAVE_INDEX_HEADER)
+  ctx.getOrLoadDialect<mlir::index::IndexDialect>();
   #endif
   #ifdef HAVE_MLIR_VECTOR_DIALECT
   ctx.getOrLoadDialect<mlir::vector::VectorDialect>();
@@ -166,6 +231,27 @@ void registerDialects(MLIRContext &ctx) {
   #endif
   #ifdef HAVE_MLIR_SHAPE_DIALECT
   ctx.getOrLoadDialect<mlir::shape::ShapeDialect>();
+  #endif
+
+  // External StableHLO family
+  #if defined(HAVE_STABLEHLO_HEADER)
+  ctx.getOrLoadDialect<mlir::stablehlo::StablehloDialect>();
+  #endif
+  #if defined(HAVE_CHLO_HEADER)
+  ctx.getOrLoadDialect<mlir::chlo::ChloDialect>();
+  #endif
+  #if defined(HAVE_VHLO_HEADER)
+  ctx.getOrLoadDialect<mlir::vhlo::VhloDialect>();
+  #endif
+  // If we don't have the real dialects linked, fallback to stub dialects
+  #if !defined(HAVE_STABLEHLO_HEADER)
+  ctx.getOrLoadDialect<StablehloStubDialect>();
+  #endif
+  #if !defined(HAVE_CHLO_HEADER)
+  ctx.getOrLoadDialect<ChloStubDialect>();
+  #endif
+  #if !defined(HAVE_VHLO_HEADER)
+  ctx.getOrLoadDialect<VhloStubDialect>();
   #endif
 }
 

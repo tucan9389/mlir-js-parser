@@ -63,7 +63,7 @@ Output (summary):
 }
 ```
 
-Note: The default bundle now registers Builtin + Func + Arith + SCF. Ops from other dialects (e.g., Tensor) will fail until those dialects are enabled and linked.
+Note: The default bundle registers Builtin + Func + Arith + SCF. Ops from other dialects (e.g., Tensor) will fail until those dialects are enabled and linked.
 
 ## Dialect support
 
@@ -75,9 +75,11 @@ The default bundle registers Builtin + Func + Arith + SCF. Additional dialects c
 | func | Supported (default) | Included by default (registered + linked) |
 | arith | Supported (default) | Included by default (registered + linked) |
 | scf | Supported (default) | Included by default (registered + linked) |
-| tensor | Planned | Register `mlir::tensor::TensorDialect`; link `MLIRTensorDialect` |
+| tensor | Optional | Register `mlir::tensor::TensorDialect`; link `MLIRTensorDialect` |
 
 See `docs/ADD-DIALECTS.md` for step-by-step instructions.
+
+StableHLO (optional): To parse StableHLO/CHLO/VHLO without preprocessing, see “Optional: Add StableHLO/CHLO/VHLO dialects (WASM)” in `docs/BUILD.md`. A minimal overlay build is supported and validated in our coverage run (see `docs/STABLEHLO_COVERAGE.md`).
 
 ## Status
 
@@ -90,12 +92,6 @@ For build/extension guides:
 - Build guide: `docs/BUILD.md`
 - Add dialects: `docs/ADD-DIALECTS.md`
 
-Approximate bundle sizes (vary by toolchain and flags):
-
-- `wasm/mlir_parser.js`: ~62 KB (raw) / ~18 KB (gzip)
-- `wasm/mlir_parser.wasm`: ~1.14 MB (raw) / ~390 KB (gzip)
-- `wasm/bindings.js`: ~3.4 KB (raw) / ~0.8 KB (gzip)
-
 Bundle sizes vary by enabled dialects. Generate a fresh size report (raw/gzip/brotli) and update `docs/SIZES.md`:
 
 ```bash
@@ -103,6 +99,12 @@ npm run size:report
 ```
 
 Enabling more dialects increases size. Track variants in `docs/SIZES.md`.
+
+Coverage & sizes:
+
+- Coverage over the StableHLO corpus and historical results: `docs/STABLEHLO_COVERAGE.md`
+- Bundle size variants and a helper script: `docs/SIZES.md` (see table)
+
 
 ## Quick start
 

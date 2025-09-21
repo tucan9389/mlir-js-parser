@@ -69,6 +69,34 @@ Open `wasm/sample/` with a static server to try the browser sample or run the No
 node wasm/sample/node.mjs
 ```
 
+### Optional: Add StableHLO/CHLO/VHLO dialects (WASM)
+
+StableHLO family dialects are not part of LLVM/MLIR core. To parse StableHLO IR without preprocessing, build StableHLO for wasm and link it:
+
+1. Build StableHLO for wasm (minimal dialects only)
+
+```bash
+# Uses ../stablehlo by default; set STABLEHLO_SRC_DIR to override
+LLVM_DIR=$LLVM_DIR MLIR_DIR=$MLIR_DIR \
+  bash scripts/build-stablehlo-wasm.sh
+```
+
+This produces static archives under:
+
+- `../stablehlo/build-wasm/stablehlo/dialect/` (e.g., `libStablehloOps.a`, `libVhloOps.a`, `libChloOps.a`, plus support libs like `libStablehloBase.a`, `libStablehloTypeInference.a`, `libVhloTypes.a`)
+
+1. Rebuild our wasm linking StableHLO libs
+
+```bash
+STABLEHLO_LIB_DIR="$PWD/../stablehlo/build-wasm/stablehlo/dialect" \
+STABLEHLO_INCLUDE_DIR="$PWD/../stablehlo" \
+  bash scripts/build-wasm.sh
+```
+
+If the libraries are found, the build will define `HAVE_STABLEHLO_DIALECT`, `HAVE_CHLO_DIALECT`, and/or `HAVE_VHLO_DIALECT`, and the parser will register them automatically.
+
+See `docs/STABLEHLO_COVERAGE.md` for end-to-end coverage results using this configuration and guidance on scanning a StableHLO corpus.
+
 ## Building LLVM/MLIR for WebAssembly
 
 If you don’t already have an Emscripten-targeted LLVM/MLIR, the repository includes a helper script that configures a minimal build:

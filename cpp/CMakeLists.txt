@@ -71,6 +71,7 @@ append_dialect_if_available(MLIRMemRefDialect         HAVE_MLIR_MEMREF_DIALECT)
 append_dialect_if_available(MLIRTensorDialect         HAVE_MLIR_TENSOR_DIALECT)
 append_dialect_if_available(MLIRMathDialect           HAVE_MLIR_MATH_DIALECT)
 append_dialect_if_available(MLIRDLTIDialect           HAVE_MLIR_DLTI_DIALECT)
+append_dialect_if_available(MLIRIndexDialect          HAVE_MLIR_INDEX_DIALECT)
 
 # Additional common dialects seen in StableHLO corpora
 append_dialect_if_available(MLIRVectorDialect         HAVE_MLIR_VECTOR_DIALECT)
@@ -86,6 +87,62 @@ append_dialect_if_available(MLIRTosaDialect           HAVE_MLIR_TOSA_DIALECT)
 append_dialect_if_available(MLIRAsyncDialect          HAVE_MLIR_ASYNC_DIALECT)
 append_dialect_if_available(MLIREmitCDialect          HAVE_MLIR_EMITC_DIALECT)
 append_dialect_if_available(MLIRShapeDialect          HAVE_MLIR_SHAPE_DIALECT)
+
+# Optional: Index dialect (core MLIR) if present
+append_dialect_if_available(MLIRIndexDialect          HAVE_MLIR_INDEX_DIALECT)
+
+# Optional: External StableHLO family (provide STABLEHLO_LIB_DIR and STABLEHLO_INCLUDE_DIR)
+if(STABLEHLO_LIB_DIR)
+  function(append_extlib_if_available lib macro)
+    set(_lib_path "${STABLEHLO_LIB_DIR}/lib${lib}.a")
+    if(EXISTS ${_lib_path})
+      # Link via absolute path to avoid relying on -l and link directories.
+      list(APPEND mlir_libs ${_lib_path})
+      set(mlir_libs "${mlir_libs}" PARENT_SCOPE)
+      if(NOT "${macro}" STREQUAL "")
+        target_compile_definitions(mlir_parser_min PRIVATE ${macro}=1)
+      endif()
+      if(STABLEHLO_INCLUDE_DIR)
+        target_include_directories(mlir_parser_min PUBLIC ${STABLEHLO_INCLUDE_DIR})
+      endif()
+      # Also include the StableHLO build lib dir so generated headers (e.g., stablehlo/dialect/*.inc) are found.
+      if(STABLEHLO_LIB_DIR)
+        # Add lib dir and its parents so includes like "stablehlo/dialect/*.inc" resolve.
+        get_filename_component(_shlo_parent "${STABLEHLO_LIB_DIR}" DIRECTORY)      # .../stablehlo
+        get_filename_component(_shlo_grandparent "${_shlo_parent}" DIRECTORY)      # build root
+        target_include_directories(mlir_parser_min PUBLIC ${STABLEHLO_LIB_DIR} ${_shlo_parent} ${_shlo_grandparent})
+      endif()
+      message(STATUS "Linking external lib: ${_lib_path} (define ${macro})")
+    else()
+      message(STATUS "Skipping external lib (not found): ${_lib_path}")
+    endif()
+  endfunction()
+
+  # StableHLO dialect libraries (actual names in upstream CMake)
+  append_extlib_if_available(StablehloOps        HAVE_STABLEHLO_DIALECT)
+  append_extlib_if_available(ChloOps             HAVE_CHLO_DIALECT)
+  append_extlib_if_available(VhloOps             HAVE_VHLO_DIALECT)
+
+  # StableHLO support libraries frequently required by the above (no macros needed)
+  append_extlib_if_available(StablehloTypeInference  "")
+  append_extlib_if_available(StablehloAssemblyFormat "")
+  append_extlib_if_available(StablehloBase           "")
+  append_extlib_if_available(StablehloBroadcastUtils "")
+  append_extlib_if_available(VhloTypes               "")
+  append_extlib_if_available(Version                 "")
+endif()
+
+# Extra MLIR libs commonly referenced by StableHLO
+append_dialect_if_available(MLIRQuantDialect           HAVE_MLIR_QUANT_DIALECT)
+append_dialect_if_available(MLIRDataLayoutInterfaces   HAVE_MLIR_DLI)
+append_dialect_if_available(MLIRTransformUtils         HAVE_MLIR_TRANSFORM_UTILS)
+append_dialect_if_available(MLIRBytecodeWriter         HAVE_MLIR_BYTECODE_WRITER)
+append_dialect_if_available(MLIRControlFlowInterfaces  HAVE_MLIR_CF_INTERFACES)
+append_dialect_if_available(MLIRInferTypeOpInterface   HAVE_MLIR_INFER_TYPE_OP_IFACE)
+
+# Optional: expose STABLEHLO_LIB_DIR and STABLEHLO_INCLUDE_DIR as cache vars for convenience
+set(STABLEHLO_LIB_DIR "${STABLEHLO_LIB_DIR}" CACHE PATH "Path to StableHLO build lib directory")
+set(STABLEHLO_INCLUDE_DIR "${STABLEHLO_INCLUDE_DIR}" CACHE PATH "Path to StableHLO include root (contains stablehlo/dialect/*)")
 
 # Link libraries
 # Note: order matters on some toolchains; MLIR first, then LLVM support

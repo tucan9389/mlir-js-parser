@@ -6,12 +6,73 @@ Top-level doc to run large-scale parsing against a StableHLO MLIR corpus, track 
 
 | Date | Total | OK | Failed | Success Rate | Size | Notes |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| 2025-09-20 | 5,449 | 1,473 | 3,976 | 27.03% | js: 62 KB, wasm: 15 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor, math, dlti, vector, linalg, llvm, spirv, transform, bufferization, sparse_tensor, omp, gpu, tosa, async, emitc, shape |
-| 2025-09-20 | 5,449 | 515 | 4,934 | 9.46% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor |
-| 2025-09-20 | 5,449 | 58 | 5,391 | 1.06% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true (scan mode); Dialects: builtin, func, arith, scf, cf, memref, tensor |
 | 2025-09-20 | 5,449 | 19 | 5,430 | 0.35% | — | Dialects: builtin, func, arith, scf; allowUnregisteredDialects: false |
+| 2025-09-20 | 5,449 | 58 | 5,391 | 1.06% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true (scan mode); Dialects: builtin, func, arith, scf, cf, memref, tensor |
+| 2025-09-20 | 5,449 | 515 | 4,934 | 9.46% | js: 62 KB, wasm: 3.5 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor |
+| 2025-09-20 | 5,449 | 1,473 | 3,976 | 27.03% | js: 62 KB, wasm: 15 MB | allowUnregistered: true; stack=5MB; Dialects: builtin, func, arith, scf, cf, memref, tensor, math, dlti, vector, linalg, llvm, spirv, transform, bufferization, sparse_tensor, omp, gpu, tosa, async, emitc, shape |
+| 2025-09-21 | 5,449 | 4,348 | 1,101 | 79.83% | js: 18.7 KB (gz), wasm: 4.12 MB (gz) | StableHLO/CHLO/VHLO linked; allowUnregistered: true; stack=5MB; Dialects: core MLIR + StableHLO family |
 
 Update this table after each scan to see progress as dialect coverage improves.
+
+## Practical setup recap (what worked for us)
+
+Goal: parse StableHLO/CHLO/VHLO in WASM without preprocessing.
+
+High-level:
+
+- Build LLVM/MLIR for WASM (Emscripten) and this project’s parser.
+- Build StableHLO “ops-only” for WASM using an overlay (avoids integrations/tools).
+- Link StableHLO archives by absolute path and add include paths so generated headers resolve.
+- Increase WASM stack (we use 5MB) and allow memory growth.
+
+Steps we used end-to-end (bash):
+
+```bash
+# 1) Build LLVM/MLIR for WASM (once)
+npm run bootstrap:wasm-llvm
+
+export LLVM_DIR=$PWD/../llvm-project/build-wasm
+export MLIR_DIR=$PWD/../llvm-project/build-wasm
+
+# 2) Build StableHLO for WASM using the minimal overlay
+LLVM_DIR=$LLVM_DIR MLIR_DIR=$MLIR_DIR \
+  bash scripts/build-stablehlo-wasm.sh
+
+# Output archives (examples) live under:
+#   ../stablehlo/build-wasm/stablehlo/dialect/
+# e.g., libStablehloOps.a, libChloOps.a, libVhloOps.a, libStablehloBase.a,
+#       libStablehloTypeInference.a, libStablehloAssemblyFormat.a,
+#       libStablehloBroadcastUtils.a, libVhloTypes.a, libVersion.a
+
+# 3) Build our WASM and link StableHLO by absolute paths
+STABLEHLO_LIB_DIR="$PWD/../stablehlo/build-wasm/stablehlo/dialect" \
+STABLEHLO_INCLUDE_DIR="$PWD/../stablehlo" \
+  bash scripts/build-wasm.sh
+
+# Artifacts: wasm/mlir_parser.{js,wasm}
+
+# 4) Run snapshot tests to sanity check
+npm run test:snap:run
+
+# 5) Scan StableHLO corpus (allow unregistered for broad triage)
+node scripts/stablehlo-scan.mjs --dir ../stablehlo --allow-unregistered
+```
+
+Notes that mattered:
+
+- We link StableHLO archives via absolute paths (not `-l...`), which was more robust under Emscripten.
+- Include paths must cover the StableHLO build tree so generated headers like `stablehlo/dialect/*.inc` resolve. We add:
+  - `STABLEHLO_INCLUDE_DIR` (source root), `STABLEHLO_LIB_DIR` (build lib dir), and parent dirs.
+- VHLO bytecode references `VhloTypes` — we needed `libVhloTypes.a` to resolve TypeID symbols.
+- Emscripten link flags we use: `-sALLOW_MEMORY_GROWTH=1` and `-sSTACK_SIZE=5242880` (5MB) for stability.
+
+## Troubleshooting StableHLO + WASM
+
+- “stablehlo/dialect/... .inc not found”: Ensure StableHLO build output directories are on the include path (we add `STABLEHLO_LIB_DIR` and its parents).
+- wasm-ld cannot find `-lStablehloOps`: Link archives by absolute path (handled by CMake logic in `cpp/CMakeLists.txt`).
+- Undefined VHLO TypeID or bytecode symbols: Link `libVhloTypes.a`.
+- Too many “unknown dialect/op” errors in scans: Run with `--allow-unregistered`, and consider avoiding registration of optional dialects that you won’t link (so unknown ops are accepted instead of hard-failing).
+- Runtime “memory access out of bounds”: Often alleviated by allowing unregistered dialects and increasing stack size; also ensure threads are disabled in Emscripten.
 
 ## Quick start
 
