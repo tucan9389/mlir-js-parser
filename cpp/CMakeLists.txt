@@ -38,9 +38,29 @@ include_directories(SYSTEM ${MLIR_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 # Link minimal MLIR components; expand as needed.
-# Link essential LLVM components. Support is mandatory; Core and DebugInfoDWARF provide
-# DataLayout parsing and DWARF enum utilities referenced by a few dialect utilities.
-llvm_map_components_to_libnames(llvm_libs Support Core DebugInfoDWARF)
+# Link essential LLVM components. "Support" and "Core" are always required.
+# "DebugInfoDWARF" is useful but optional for our parser; some minimal LLVM builds
+# (like our bootstrap WASM toolchain) may not produce this archive by default.
+llvm_map_components_to_libnames(llvm_libs Support Core)
+
+# Prefer to include LLVMDebugInfoDWARF when available.
+# In Emscripten builds, check for the static archive explicitly to avoid hard failures
+# when the component wasn't built in the external toolchain.
+if(EMSCRIPTEN)
+  get_filename_component(_llvm_cmake_dir ${LLVM_DIR} DIRECTORY)       # .../lib/cmake
+  get_filename_component(LLVM_LIB_DIR ${_llvm_cmake_dir} DIRECTORY)   # .../lib
+  set(_llvm_dwarf_lib "${LLVM_LIB_DIR}/libLLVMDebugInfoDWARF.a")
+  if(EXISTS "${_llvm_dwarf_lib}")
+    list(APPEND llvm_libs "${_llvm_dwarf_lib}")
+    message(STATUS "Linking LLVM DWARF lib: ${_llvm_dwarf_lib}")
+  else()
+    message(STATUS "LLVMDebugInfoDWARF not found in ${LLVM_LIB_DIR}; proceeding without it (WASM minimal build).")
+  endif()
+else()
+  # For native builds, link by component name (usually available in full LLVM builds).
+  llvm_map_components_to_libnames(_llvm_dwarf DebugInfoDWARF)
+  list(APPEND llvm_libs ${_llvm_dwarf})
+endif()
 
 # Base required libs
 set(mlir_libs

@@ -54,6 +54,7 @@ jobs:
             wasm/mlir_parser.js
             wasm/mlir_parser.wasm
           if-no-files-found: error
+          overwrite: true
 
   scan:
     name: scan stablehlo corpus
@@ -99,3 +100,4 @@ jobs:
             tmp/stablehlo-*.jsonl
             tmp/stablehlo-files.txt
           if-no-files-found: warn
+          overwrite: true

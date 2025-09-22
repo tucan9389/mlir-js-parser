@@ -38,6 +38,8 @@ emcmake cmake -S "$SRC_DIR/llvm" -B "$BUILD_DIR" -G Ninja \
 
 echo "Building MLIR libs (this will take a while)"
 targets=(
+  # Ensure LLVM DWARF lib is built when available; harmless if unused
+  LLVMDebugInfoDWARF
   MLIRParser MLIRAsmParser MLIRBytecodeReader MLIRIR MLIRSupport
   MLIRFuncDialect MLIRArithDialect MLIRSCFDialect MLIRControlFlowDialect
   MLIRMemRefDialect MLIRTensorDialect MLIRMathDialect MLIRDLTIDialect

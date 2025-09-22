@@ -90,7 +90,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: vitest-snapshots-diff
+          # Make artifact name unique per matrix job and run attempt to avoid 409 conflicts
+          name: vitest-snapshots-diff-node-${{ matrix.node }}-run${{ github.run_attempt }}
           path: |
             tests/snapshot/**/__snapshots__/**
             **/vitest-output.log
