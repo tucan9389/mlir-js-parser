@@ -45,6 +45,10 @@ targets=(
   MLIRTransformDialect MLIRBufferizationDialect MLIRSparseTensorDialect
   MLIROpenMPDialect MLIRGPUDialect MLIRTosaDialect MLIRAsyncDialect
   MLIREmitCDialect MLIRShapeDialect
+  # Frequently referenced support/dialects in corpora
+  MLIRPDLDialect MLIRPDLInterpDialect
+  MLIRMLProgramDialect
+    MLIRUBDialect
 )
 if [[ "${ENABLE_TESTING:-}" == "1" ]]; then
   # Build available MLIR Test libraries when testing is enabled

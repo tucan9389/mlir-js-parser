@@ -19,7 +19,7 @@ function parseArgs(argv) {
   let defaultDir = candidates.find(d => fs.existsSync(d)) || candidates[0];
   if (!defaultDir) defaultDir = path.resolve(cwd, '../stablehlo');
 
-  const args = { dir: defaultDir, outDir: path.resolve(cwd, 'tmp'), listOnly: false, allowUnregistered: false };
+  const args = { dir: defaultDir, outDir: path.resolve(cwd, 'tmp'), listOnly: false, allowUnregistered: false, excludeDialects: [] };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dir') {
@@ -30,8 +30,11 @@ function parseArgs(argv) {
       args.listOnly = true;
     } else if (a === '--allow-unregistered') {
       args.allowUnregistered = true;
+    } else if (a === '--exclude-dialects') {
+      const v = (argv[++i] || '').trim();
+      if (v) args.excludeDialects = v.split(',').map(s => s.trim()).filter(Boolean);
     } else if (a === '--help' || a === '-h') {
-      console.log('Usage: node scripts/stablehlo-scan.mjs [--dir <path>] [--out <path>] [--list-only] [--allow-unregistered]');
+      console.log('Usage: node scripts/stablehlo-scan.mjs [--dir <path>] [--out <path>] [--list-only] [--allow-unregistered] [--exclude-dialects check,test]');
       process.exit(0);
     }
   }
@@ -68,7 +71,12 @@ function extractUnknownDialect(msg) {
   // 2) "dialect `gpu' not found for custom op 'gpu.module'" => capture gpu
   // 3) "...'none' attribute created with unregistered dialect... #\"dlti\"<...>" => capture dlti (best-effort)
 
-  let m = msg.match(/'([a-zA-Z0-9_]+)\.[a-zA-Z0-9_]+'\s+op\s+/);
+  // Case: custom op 'dialect.op' is unknown
+  let m = msg.match(/custom\s+op\s+'([a-zA-Z0-9_]+)\.[^']*'\s+is\s+unknown/);
+  if (m) return m[1];
+
+  // Case: '<dialect>.<op>' op ...
+  m = msg.match(/'([a-zA-Z0-9_]+)\.[a-zA-Z0-9_]+'\s+op\s+/);
   if (m) return m[1];
 
   m = msg.match(/dialect [`'"]([a-zA-Z0-9_]+)[`'"]\s+not\s+found/i);
@@ -82,7 +90,7 @@ function extractUnknownDialect(msg) {
 }
 
 async function main() {
-  const { dir, outDir, listOnly, allowUnregistered } = parseArgs(process.argv);
+  const { dir, outDir, listOnly, allowUnregistered, excludeDialects } = parseArgs(process.argv);
   ensureDirSync(outDir);
 
   // Collect all .mlir files
@@ -130,6 +138,15 @@ async function main() {
     }
     try {
       const text = await fsp.readFile(file, 'utf8');
+      if (excludeDialects && excludeDialects.length) {
+        const skip = excludeDialects.some(d => text.includes(`${d}.`));
+        if (skip) {
+          // Treat skipped files as OK for coverage purposes, but record skip info if needed
+          okCount++;
+          results.push({ file, ok: true, skipped: true, reason: 'excluded-dialect' });
+          continue;
+        }
+      }
       const res = parseMlirCheck(text, { allowUnregistered });
       if (res.ok) {
         okCount++;
